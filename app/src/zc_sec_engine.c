@@ -353,7 +353,6 @@ SEC_Encrypt(ZC_SecHead *pstruSecHead, u8 *pu8CiperBuf, u8 *pu8PlainBuf, u16 *pu1
         pstruSecHead->u8SecType = ZC_SEC_ALG_NONE;
     }
 
-    ZC_Printf("º”√‹ u8SecFlag %d\n",pstruSecHead->u8SecType);
     switch (pstruSecHead->u8SecType)
     {
         case ZC_SEC_ALG_NONE:
@@ -403,7 +402,6 @@ SEC_Decrypt(ZC_SecHead *pstruSecHead, u8 *pu8CiperBuf, u8 *pu8PlainBuf, u16 *pu1
         u8SecFlag = pstruSecHead->u8SecType;
     }
 
-    ZC_Printf("Ω‚√‹ u8SecFlag %d\n",u8SecFlag);
     switch (u8SecFlag)
     {
         case ZC_SEC_ALG_NONE:

@@ -73,8 +73,6 @@ u32 g_u32BcSleepCount = 800;//800
 
 LOCAL struct espconn tcp_client_conn;    /* ×öserver */
 struct espconn tcp_server_conn;          /* ×öclient */
-//LOCAL struct espconn tcp_redirect_conn;  /* ×öclient */
-
 
 LOCAL esp_tcp esptcp;
 LOCAL struct espconn user_udp_espconn;
@@ -273,16 +271,8 @@ ESP_SendTcpData(u32 u32Fd, u8 *pu8Data, u16 u16DataLen, ZC_SendParam *pstruParam
     /* client/server */
     if (PCT_SERVER_TCP_SOCKET == u32Fd)
     {
-        //if (1 == g_struProtocolController.u8SendToCloudFlag)
-        //{
-            espconn_send(&tcp_server_conn, pu8Data, u16DataLen);
-            ZC_Printf("Send to cloud dataLen is :%d\n",u16DataLen);
-        //}
-        //else
-        //{
-        //    espconn_send(&tcp_redirect_conn, pu8Data, u16DataLen);
-        //    ZC_Printf("Send to redirect dataLen is :%d\n",u16DataLen);           
-        //}
+        espconn_send(&tcp_server_conn, pu8Data, u16DataLen);
+        ZC_Printf("Send to cloud dataLen is :%d\n",u16DataLen);
     }
     else if (PCT_CLIENT_TCP_SOCKET == u32Fd)
     {
@@ -470,34 +460,7 @@ ESP_DnsFoundHook(const char *name, ip_addr_t *ipaddr, void *arg)
     ZC_Printf("ESP_DnsFoundHook %d.%d.%d.%d \r\n",
             *((uint8 *)&ipaddr->addr), *((uint8 *)&ipaddr->addr + 1),
             *((uint8 *)&ipaddr->addr + 2), *((uint8 *)&ipaddr->addr + 3));
-#if 0
-    //if (ipaddr->addr!=0 && (tcp_server_conn.state==ESPCONN_NONE||tcp_server_conn.state==ESPCONN_CLOSE))//tcp_server_ip.addr == 0 &&
-    if (tcp_server_ip.addr == 0 && ipaddr->addr != 0) 
-    {
-        tcp_server_ip.addr = ipaddr->addr;
-        os_memcpy(tcp_redirect_conn.proto.tcp->remote_ip, &ipaddr->addr, 4); // remote ip of tcp server which get by dns
-        tcp_redirect_conn.proto.tcp->remote_port = ZC_CLOUD_PORT; // remote port of tcp server
-        tcp_redirect_conn.proto.tcp->local_port = espconn_port(); //local port of ESP8266
 
-        espconn_regist_connectcb(&tcp_redirect_conn, ESP_ConnectedCloud); // register connect callback
-        espconn_regist_reconcb(&tcp_redirect_conn, ESP_ReconnectCloud); // register reconnect callback as error handler
-        temp = espconn_connect(&tcp_redirect_conn);
-        if(temp == ESPCONN_ISCONN)
-        {
-            g_struProtocolController.u8MainState = PCT_STATE_WAIT_ACCESS;
-            return;
-        }
-        ZC_Printf("tcp connect %d, %d.%d.%d.%d, %d,%d\n",temp,
-                tcp_redirect_conn.proto.tcp->remote_ip[0],
-                tcp_redirect_conn.proto.tcp->remote_ip[1],
-                tcp_redirect_conn.proto.tcp->remote_ip[2],
-                tcp_redirect_conn.proto.tcp->remote_ip[3],
-                tcp_redirect_conn.proto.tcp->remote_port,
-				tcp_redirect_conn.proto.tcp->local_port);
-
-    }
-#endif
-#if 1
     if (tcp_server_ip.addr == 0 && ipaddr->addr != 0) 
     {
         tcp_server_ip.addr = ipaddr->addr;
@@ -522,7 +485,7 @@ ESP_DnsFoundHook(const char *name, ip_addr_t *ipaddr, void *arg)
 				tcp_server_conn.proto.tcp->local_port);
 
     }
-#endif
+
 }
 
 /*************************************************
@@ -733,10 +696,7 @@ ESP_BcInit(void)
     tcp_client_conn.type = ESPCONN_TCP;
     //tcp_client_conn.state = ESPCONN_NONE;
     tcp_client_conn.proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
-
-    //tcp_redirect_conn.type = ESPCONN_TCP;
-    //tcp_redirect_conn.proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
-         
+      
     g_struProtocolController.struClientConnection.u32Socket = PCT_CLIENT_TCP_SOCKET;
     tcp_client_conn.proto.tcp->local_port = ZC_SERVER_PORT;
     
