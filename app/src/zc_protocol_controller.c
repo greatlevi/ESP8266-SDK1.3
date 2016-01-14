@@ -1219,7 +1219,8 @@ PCT_Sleep()
             TIMER_StopTimer((u8)u32Index);
         }
     }
-
+    (void)espconn_disconnect(&tcp_server_conn);
+    os_delay_us(1000);
     TIMER_Init();
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8SendMoudleTimer = PCT_TIMER_INVAILD;
