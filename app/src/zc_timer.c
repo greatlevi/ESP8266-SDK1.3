@@ -143,6 +143,7 @@ TIMER_TimeoutAction(u8 u8TimerIndex)
 void //ICACHE_FLASH_ATTR
 TIMER_StopTimer(u8 u8TimerIndex)
 {
+    ZC_Printf("Stop timer: index is %d, type is %d\n", u8TimerIndex, g_struTimer[u8TimerIndex].u8Type);
     g_struTimer[u8TimerIndex].u8Status = ZC_TIMER_STATUS_IDLE;
     g_struProtocolController.pstruMoudleFun->pfunStopTimer(u8TimerIndex);
 }

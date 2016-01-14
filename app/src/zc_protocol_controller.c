@@ -1179,39 +1179,20 @@ PCT_Run()
 		case PCT_STATE_SLEEP:
 			break;
         case PCT_STATE_INIT:
-        #if 0
-        	if(STATION_GOT_IP == wifi_station_get_connect_status())
-        	{
-            	ZC_Printf(" PCT_STATE_INIT \n");
-        		GET_UDP_IP();
-        		PCT_WakeUp();
-        		UDP_BROADCAST();
-        	}
-        #endif
             break;
         case PCT_STATE_ACCESS_NET:
-            //ZC_Printf("PCT_STATE_ACCESS_NET\n");
-            //pstruContoller->u8MainState = PCT_STATE_WAIT_TCPCONNECT;
             PCT_ConnectCloud(pstruContoller);
             break;
         case PCT_STATE_WAIT_ACCESS:
-            //ZC_Printf("PCT_STATE_WAIT_ACCESS\n");
-            //pstruContoller->u8MainState += PCT_STATE_DELAY;
         	PCT_SendCloudAccessMsg1(pstruContoller);
             break;
         case PCT_STATE_WAIT_ACCESSRSP:
-            //ZC_Printf("PCT_STATE_WAIT_ACCESSRSP\n");
-            //pstruContoller->u8MainState += PCT_STATE_DELAY;
             PCT_RecvAccessMsg2(pstruContoller);
             break;    
         case PCT_STATE_WAIT_MSG4:
-            //ZC_Printf("PCT_STATE_WAIT_MSG4\n");
-            //pstruContoller->u8MainState += PCT_STATE_DELAY;
             PCT_RecvAccessMsg4(pstruContoller);
             break;
         case PCT_STATE_CONNECT_CLOUD:
-            //ZC_Printf("PCT_STATE_CONNECT_CLOUD\n");
-            //pstruContoller->u8MainState += PCT_STATE_DELAY;
             PCT_HandleEvent(pstruContoller);
             break;
         case PCT_STATE_WAIT_UNBIND:

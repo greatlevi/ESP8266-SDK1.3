@@ -20,6 +20,7 @@
 typedef struct 
 {
     os_timer_t timer;
+    u8         u8Index;
 }ESP_TimerInfo;
 
 

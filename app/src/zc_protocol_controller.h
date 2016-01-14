@@ -23,7 +23,6 @@
 
 
 /*PCT Main State Machine*/
-#define    PCT_STATE_DELAY                  (100)
 #define    PCT_STATE_SLEEP                  (0)
 #define    PCT_STATE_INIT                   (1)
 #define    PCT_STATE_ACCESS_NET             (2)

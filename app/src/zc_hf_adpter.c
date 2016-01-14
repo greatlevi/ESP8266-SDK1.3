@@ -185,12 +185,18 @@ ESP_SetTimer(u8 u8Type, u32 u32Interval, u8 *pu8TimeIndex)
     u32Retval = TIMER_FindIdleTimer(&u8TimerIndex);
     if (ZC_RET_OK == u32Retval)
     {
+        ZC_Printf("Set timer: type is %u, index is %u, interval is %u\n", u8Type, u8TimerIndex, u32Interval);
         TIMER_AllocateTimer(u8Type, u8TimerIndex, (u8*)&g_struEspTimer[u8TimerIndex]);
         *pu8TimeIndex = u8TimerIndex;
+        g_struEspTimer[u8TimerIndex].u8Index = u8TimerIndex;
         timer = &g_struEspTimer[u8TimerIndex].timer;
     	os_timer_disarm(timer);
-        os_timer_setfn(timer, (os_timer_func_t *)ESP_timer_callback, pu8TimeIndex);
+        os_timer_setfn(timer, (os_timer_func_t *)ESP_timer_callback, g_struEspTimer[u8TimerIndex].u8Index);
         os_timer_arm(timer, u32Interval, 0);
+    }
+    else
+    {
+        ZC_Printf("no idle timer\n");
     }
     
     return u32Retval;
@@ -649,7 +655,8 @@ ESP_RecvFromBroadcast(void *arg, char *pusrdata, unsigned short length)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_SendBroadcast(void *arg)
 {
-//    struct espconn *pespconn = arg;
+    //    struct espconn *pespconn = arg;
+    ZC_Printf("Send Bc ok\n");
 }
 /*************************************************
 * Function: ESP_BcInit
@@ -684,7 +691,7 @@ ESP_BcInit(void)
 
     g_struProtocolController.u16SendBcNum = 0;
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
-    g_u32BcSleepCount = 250000;
+    g_u32BcSleepCount = 10;
 
     return;
 }
