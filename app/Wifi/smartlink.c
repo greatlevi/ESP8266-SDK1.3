@@ -25,7 +25,7 @@ LOCAL os_timer_t smartlink_timer;
 LOCAL smartlink_success_callback_t smartlink_success_callback_handle = NULL;
 LOCAL smartlink_timeout_callback_t smartlink_timeout_callback_handle = NULL;
 
-
+extern void ESP_ChangeToNormalState(void);
 
 void ICACHE_FLASH_ATTR
 smartlink_timeout(void)
@@ -69,6 +69,7 @@ smartlink_done(sc_status status, void *pdata)
             os_printf("Phone ip: %d.%d.%d.%d\n", phone_ip[0], phone_ip[1], phone_ip[2], phone_ip[3]);
 
         }
+        ESP_ChangeToNormalState();
         if (smartlink_success_callback_handle)
         {
             smartlink_success_callback_handle(pdata);

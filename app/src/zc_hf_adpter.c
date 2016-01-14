@@ -277,9 +277,10 @@ ESP_Rest(void)
     g_struZcConfigDb.struSwitchInfo.u32SecSwitch = 1;
     ESP_WriteDataToFlash((u8 *)&g_struZcConfigDb, sizeof(ZC_ConfigDB));
 
-	g_struProtocolController.u8MainState = PCT_STATE_INIT;
-	g_struProtocolController.u16SendBcNum = 0;
-    TIMER_Init();
+	//g_struProtocolController.u8MainState = PCT_STATE_INIT;
+	//g_struProtocolController.u16SendBcNum = 0;
+    //TIMER_Init();
+    g_struProtocolController.u8SmntFlag = SMART_CONFIG_STATE;
 	SmartLink();
 }
 /*************************************************
@@ -375,10 +376,11 @@ LOCAL void ICACHE_FLASH_ATTR
 ESP_DisconFromCloud(void *arg)
 {
     struct espconn *pespconn = arg;
-    if(PCT_STATE_WAIT_SMARTLINK == g_struProtocolController.u8MainState)
+    if (SMART_CONFIG_STATE == g_struProtocolController.u8SmntFlag)
     {
         return;
     }
+
 	ZC_Printf("ESP_DisconFromCloud !!! %d\n",g_struProtocolController.u8MainState);
     if(tcp_server_conn.proto.tcp->remote_port == pespconn->proto.tcp->remote_port)
     {
@@ -439,6 +441,10 @@ LOCAL void ICACHE_FLASH_ATTR
 ESP_ReconnectCloud(void *arg, sint8 err)
 {
     ZC_Printf("user error code %d !!! \r\n",err);
+    if (SMART_CONFIG_STATE == g_struProtocolController.u8SmntFlag)
+    {
+        return;
+    }
     //if(g_struProtocolController.u8MainState == PCT_STATE_INIT)return;
 	PCT_ReconnectCloud(&g_struProtocolController, 1000);
 	g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
@@ -514,7 +520,7 @@ ESP_ConnectToCloud(PTC_Connection *pstruConnection)
     
     if (1 == g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig)
     {
-        g_struProtocolController.u8SendToCloudFlag = 1;
+        //g_struProtocolController.u8SendToCloudFlag = 1;
         port = g_struZcConfigDb.struSwitchInfo.u16ServerPort;
         struIp.addr = ZC_HTONL(g_struZcConfigDb.struSwitchInfo.u32ServerIp);
         retval = HF_SUCCESS;
@@ -730,11 +736,7 @@ ESP_GotIp(void)
 	wifi_get_ip_info(0, &info);
 	os_memcpy(user_udp_espconn.proto.udp->local_ip, (u8*)&(info.ip.addr), 4);
 	g_u32GloablIp = info.ip.addr;
-    ZC_Printf("8266 ip  %d,%d,%d,%d\n",
-    		user_udp_espconn.proto.udp->local_ip[0],
-    		user_udp_espconn.proto.udp->local_ip[1],
-    		user_udp_espconn.proto.udp->local_ip[2],
-    		user_udp_espconn.proto.udp->local_ip[3]);
+
 }
 /*************************************************
 * Function: ESP_UdpBroadcast
@@ -927,6 +929,18 @@ void ESP_CreateTaskTimer(void)
     os_timer_setfn(&task_timer, (os_timer_func_t *)ESP_Cloudfunc, NULL);
     os_timer_arm(&task_timer, 100, 0);
 
+}
+/*************************************************
+* Function: ESP_CreateTaskTimer
+* Description:
+* Author: cxy
+* Returns:
+* Parameter:
+* History:
+*************************************************/
+void ESP_ChangeToNormalState(void)
+{
+    g_struProtocolController.u8SmntFlag = 0;
 }
 /*************************************************
 * Function: UARTRx_Buf_Init

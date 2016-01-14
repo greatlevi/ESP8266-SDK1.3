@@ -125,7 +125,7 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     MSG_Init();
     TIMER_Init();
 
-    g_struProtocolController.u8SendToCloudFlag = 0;
+    //g_struProtocolController.u8SendToCloudFlag = 0;
     g_struProtocolController.u8keyRecv = PCT_KEY_UNRECVED;
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8SendMoudleTimer = PCT_TIMER_INVAILD;
@@ -134,6 +134,7 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     g_struProtocolController.u8RebootTimer = PCT_TIMER_INVAILD;
 
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
+    g_struProtocolController.u8SmntFlag = 0;
 
     ZC_ClientInit();
 }

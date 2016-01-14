@@ -32,8 +32,6 @@
 #define    PCT_STATE_CONNECT_CLOUD          (6)
 #define    PCT_STATE_WAIT_UNBIND            (7)
 #define    PCT_STATE_DISCONNECT_CLOUD       (8)
-#define    PCT_STATE_WAIT_SMARTLINK         (98)
-#define    PCT_STATE_WAIT_TCPCONNECT        (99)
 
 #define    PCT_INVAILD_SOCKET               (0xFFFFFFFF)
 #define    PCT_SERVER_TCP_SOCKET                (0)
@@ -148,7 +146,8 @@ typedef struct
     u8   u8SendMoudleTimer;
     u8   u8RegisterTimer;
     u8   u8ReSendMoudleNum;
-    u8   u8SendToCloudFlag;
+    //u8   u8SendToCloudFlag;
+    u8   u8SmntFlag;
     
     u8   *pu8SendMoudleBuffer;
     

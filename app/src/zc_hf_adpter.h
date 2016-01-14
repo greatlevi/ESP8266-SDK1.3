@@ -24,6 +24,8 @@
 #define AC_PAYLOADLENOFFSET              3
 #define UART0RX_RING_LEN                 1024
 
+#define SMART_CONFIG_STATE               1
+
 typedef struct 
 {
     os_timer_t timer;
@@ -110,6 +112,7 @@ void ESP_CreateTaskTimer(void);
 void UARTRx_Buf_Init(UARTStruct *qp, u8 *rxbuf, u16 len);
 void UartInit(void);
 void Uart_RecvFromMcu(void);
+void ESP_ChangeToNormalState(void);
 
 
 #ifdef __cplusplus
