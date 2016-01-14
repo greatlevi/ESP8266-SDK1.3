@@ -47,7 +47,6 @@ void wifi_handle_event_cb(System_Event_t *evt)
             SET_STATUS_BIT(g_ulStatus, STATUS_BIT_DISCONNECTED);
             CLR_STATUS_BIT(g_ulStatus, STATUS_BIT_CONNECTION);
             CLR_STATUS_BIT(g_ulStatus, STATUS_BIT_IP_AQUIRED);
-            //ESP_Sleep();
             break;      
         case EVENT_STAMODE_AUTHMODE_CHANGE:
             os_printf("mode: %d -> %d\n",

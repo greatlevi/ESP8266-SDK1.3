@@ -68,7 +68,6 @@ ESP_TimerInfo g_struEspTimer[ZC_TIMER_MAX_NUM];
 u8  g_u8BcSendBuffer[100];
 u8  g_u8JdRcvBuffer[256];
 u32 g_u32BcSleepCount = 800;//800
-//struct sockaddr_in struRemoteAddr;
 
 
 LOCAL struct espconn tcp_client_conn;    /* ×öserver */
@@ -377,22 +376,6 @@ ESP_RecvFromCloud(void *arg, char *pusrdata, unsigned short length)
     os_memcpy(g_u8recvbuffer, pusrdata, length);
     MSG_RecvDataFromCloud(g_u8recvbuffer, length);
     ZC_Printf("recv from cloud\n");
-#if 0
-	switch(g_struProtocolController.u8MainState - PCT_STATE_DELAY)
-	{
-    	case PCT_STATE_WAIT_ACCESS:
-    		g_struProtocolController.u8MainState = PCT_STATE_WAIT_ACCESSRSP;
-    		break;
-    	case PCT_STATE_WAIT_ACCESSRSP:
-    		g_struProtocolController.u8MainState = PCT_STATE_WAIT_MSG4;
-    		break;
-    	case PCT_STATE_CONNECT_CLOUD:
-    		g_struProtocolController.u8MainState = PCT_STATE_CONNECT_CLOUD;
-    		break;
-    	default:
-    		break;
-	}
-#endif
 }
 /*************************************************
 * Function: ESP_ConnectedCloud
@@ -502,8 +485,6 @@ ESP_ConnectToCloud(PTC_Connection *pstruConnection)
     struct ip_addr struIp;
     int retval = 255;
     u16 port;
-    //u32 u32Addr = 0x78844d00;
-    //u32 u32Addr = 0x004d8478;
     
     if (1 == g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig)
     {
@@ -520,17 +501,12 @@ ESP_ConnectToCloud(PTC_Connection *pstruConnection)
                                          &tcp_server_ip, ESP_DnsFoundHook);
         return ZC_RET_OK;
     }
-
-    //(void)espconn_disconnect(&tcp_server_conn);
-    //os_delay_us(100);
     
     ZC_Printf("cloud_default ip %d.%d.%d.%d %d\r\n",
             *((uint8 *)&struIp.addr), *((uint8 *)&struIp.addr + 1),
             *((uint8 *)&struIp.addr + 2), *((uint8 *)&struIp.addr + 3), port);
 
-    os_memcpy(tcp_server_conn.proto.tcp->remote_ip, &struIp.addr, 4);
-    //os_memcpy(tcp_server_conn.proto.tcp->remote_ip, &u32Addr, 4);
-    
+    os_memcpy(tcp_server_conn.proto.tcp->remote_ip, &struIp.addr, 4); 
     
     tcp_server_conn.proto.tcp->remote_port = port;
     tcp_server_conn.proto.tcp->local_port = espconn_port(); //local port of ESP8266
@@ -793,7 +769,7 @@ ESP_Init(void)
     g_struHfAdapter.pfunReboot = ESP_Reboot;
 
     g_u16TcpMss = 1000;
-#if 1
+
     PCT_Init(&g_struHfAdapter);
 
     g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
@@ -801,7 +777,6 @@ ESP_Init(void)
     ZC_Printf("u32SecSwitch %d\n",g_struZcConfigDb.struSwitchInfo.u32SecSwitch);
     //ESP_ReadDataFormFlash();
     ESP_BcInit();
-    //system_os_task(ESP_Cloudfunc, AcTaskPrio, AcTaskQueue, AcTaskQueueLen); 
 
     os_memset(g_u8DeviceId, '0', 16);
     os_memset(mac_string, '\0', 12);
@@ -819,8 +794,6 @@ ESP_Init(void)
     os_memcpy(g_struRegisterInfo.u8EqVersion, g_u8EqVersion, ZC_EQVERSION_LEN);
     
     ESP_CreateTaskTimer();
-	//system_os_post(AcTaskPrio, 0, 0);
-#endif
     return 1;
 
 }
@@ -870,7 +843,7 @@ ESP_Cloudfunc(void)
     u32 u32Timer;
     //disarm timer first
     os_timer_disarm(&task_timer);
-#if 1
+
 	if (TI_IS_IP_ACQUIRED(g_ulStatus))
     {
         ZC_Printf("ESP_Cloudfunc ip aquired\n");
@@ -885,7 +858,7 @@ ESP_Cloudfunc(void)
         ESP_Sleep();
         CLR_STATUS_BIT(g_ulStatus, STATUS_BIT_DISCONNECTED);
     }
-#endif
+
     PCT_Run();
     
     if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
