@@ -15,12 +15,11 @@
 #include <zc_protocol_interface.h>
 #include <zc_timer.h>
 #include "user_config.h"
-//#include "espconn.h"
+#include "espconn.h"
 
 PTC_ProtocolCon  g_struProtocolController;
 extern ZC_Timer g_struTimer[ZC_TIMER_MAX_NUM];
-extern u8 g_u8SendOk;
-//extern struct espconn tcp_server_conn;
+extern struct espconn tcp_server_conn;
 
 /*************************************************
 * Function: PCT_CheckCrc
@@ -298,8 +297,8 @@ PCT_SendCloudAccessMsg3(PTC_ProtocolCon *pstruContoller)
 void ICACHE_FLASH_ATTR
 PCT_DisConnectCloud(PTC_ProtocolCon *pstruContoller)
 {
-    //(void)espconn_disconnect(&tcp_server_conn);
-    //os_delay_us(100);
+    (void)espconn_disconnect(&tcp_server_conn);
+    os_delay_us(1000);
     pstruContoller->u8MainState = PCT_STATE_DISCONNECT_CLOUD;
     pstruContoller->u8keyRecv = PCT_KEY_UNRECVED;
     MSG_Init();
@@ -951,7 +950,6 @@ PCT_8266SendMsgToCloud(ZC_MessageHead* pstruMsg,u8* pu8Msg,u16 Msglen)
     struHead.u16TotalMsg = ZC_HTONS(u16Len);
     (void)PCT_SendMsgToCloud(&struHead, (u8*)pstruMsg);
 
-	g_u8SendOk = 1;
 }
 
 /*************************************************
@@ -1046,7 +1044,6 @@ PCT_SetTokenKey(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
     PCT_SendEmptyMsg(pstruMsg->MsgId, ZC_SEC_ALG_AES);
     PCT_SendAckToCloud(pstruMsg->MsgId);
 
-    g_u8SendOk = 1;
     return;
 }
 
@@ -1071,7 +1068,6 @@ PCT_ResetNetWork(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
     PCT_SendEmptyMsg(pstruMsg->MsgId, ZC_SEC_ALG_AES);
     PCT_SendAckToCloud(pstruMsg->MsgId);
 
-    g_u8SendOk = 1;
     return;
 }
 
