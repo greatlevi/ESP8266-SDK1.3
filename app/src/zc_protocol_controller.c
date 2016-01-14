@@ -951,32 +951,6 @@ PCT_8266SendMsgToCloud(ZC_MessageHead* pstruMsg,u8* pu8Msg,u16 Msglen)
     (void)PCT_SendMsgToCloud(&struHead, (u8*)pstruMsg);
 
 }
-#if 0
-/*************************************************
-* Function: PCT_HandleMoudleMsg
-* Description:
-* Author: cxy
-* Returns:
-* Parameter:
-* History:
-*************************************************/
-void ICACHE_FLASH_ATTR
-PCT_8266HandleMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
-{
-    ZC_MessageHead *pstruMsg;
-    pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
-
-    RecvMessage(pstruMsg);
-
-    /*restart heart timer*/
-    if (PCT_TIMER_INVAILD != pstruContoller->u8HeartTimer)
-    {
-        TIMER_StopTimer(pstruContoller->u8HeartTimer);
-    }
-    pstruContoller->pstruMoudleFun->pfunSetTimer(PCT_TIMER_SENDHEART,
-        PCT_TIMER_INTERVAL_HEART, &pstruContoller->u8HeartTimer);
-}
-#endif
 /*************************************************
 * Function: PCT_HandleMoudleMsg
 * Description:

@@ -265,8 +265,8 @@ PrintfHex(u8* data,u16 len)
 /******************************************************************************
  * FunctionName : uart0_handler
  * Description  : 数据接收处理
- * Parameters   : UartBautRate uart0_br - uart0 bautrate
- *                UartBautRate uart1_br - uart1 bautrate
+ * Parameters   : 
+ *                
  * Returns      : NONE
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
@@ -351,6 +351,7 @@ uart0_handler(void)
                     rx_desc->pkt_num++;
                     rx_desc->cur_type = PKT_UNKNOWN;
                     AMBodyLen = 0;
+                    os_printf("Uart: Recv a complete package\n");
                 }   
 
                 LastCh = ch;

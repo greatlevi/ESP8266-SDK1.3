@@ -127,21 +127,21 @@ void smartlink_timeout_callback_register(smartlink_timeout_callback_t smartlink_
 }
 
 /******************************************************************************
- * FunctionName : SamrtLink
+ * FunctionName : SmartLink
  * Description  : ÷«ƒ‹≈‰÷√
  * Parameters   :
  * Returns      :
 *******************************************************************************/
 //extern u8 TcpConnect;
 void ICACHE_FLASH_ATTR
-SamrtLink(void)
+SmartLink(void)
 {
 	wifi_set_opmode(STATION_MODE);
     smartconfig_stop();
 	smartconfig_start(smartlink_done);
 }
 void ICACHE_FLASH_ATTR
-SamrtLinkInter(void)
+SmartLinkInter(void)
 {
 //	SysTask.m_WifiState = WIFI_SMARTLINK;
 //#ifdef Network_Test
@@ -177,7 +177,7 @@ WifiInit(void)
 		wifi_station_connect();
 	} else
 	{
-		SamrtLinkInter();
+		SmartLinkInter();
 	}
 }
 
@@ -196,7 +196,7 @@ InterruptIOHandle(void)
 	if(gpio_status&BIT4)
 	{
 	    smartconfig_stop();
-	    SamrtLinkInter();
+	    SmartLinkInter();
 	}
 	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
 }

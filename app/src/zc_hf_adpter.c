@@ -280,7 +280,7 @@ ESP_Rest(void)
 	g_struProtocolController.u8MainState = PCT_STATE_INIT;
 	g_struProtocolController.u16SendBcNum = 0;
     TIMER_Init();
-	SamrtLink();
+	SmartLink();
 }
 /*************************************************
 * Function: ESP_SendTcpData
@@ -993,7 +993,7 @@ Uart_RecvFromMcu(void)
         for(i = 0; i < rxpkt_len; i++)       //O(n)
         {
             Buf_Pop(rx_ring,pCmdWifiBuf[i]);
-            //Printf_High("Buf_Pop=%x \n",pCmdBuf[i]);
+            ZC_Printf("Buf_Pop=%x \n",pCmdWifiBuf[i]);
         }
         //reset value
         infor->pkt_type = PKT_UNKNOWN;
