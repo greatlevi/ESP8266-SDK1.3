@@ -55,35 +55,12 @@ void wifi_handle_event_cb(System_Event_t *evt)
                             evt->event_info.auth_change.new_mode);
             break;      
         case EVENT_STAMODE_GOT_IP:
-            os_printf("Got ip:" IPSTR ",mask:" IPSTR ",gw:" IPSTR,
-                        IP2STR(&evt->event_info.got_ip.ip),
-                        IP2STR(&evt->event_info.got_ip.mask), 
-                        IP2STR(&evt->event_info.got_ip.gw));
-            os_printf("\n");
             SET_STATUS_BIT(g_ulStatus, STATUS_BIT_IP_AQUIRED);
-            os_printf("Got ip finished!\n");
-            //ESP_GotIp();
-            //ESP_WakeUp();
-    		//ESP_UdpBroadcast();
             break;
         default:
             break;
     } 
 } 
-/*************************************************
-* Function: uart_pre_init
-* Description: 
-* Author: cxy 
-* Returns: 
-* Parameter: 
-* History:
-*************************************************/
-void  uart_pre_init(void)
-{
-	uart_init(BIT_RATE_115200, BIT_RATE_115200);
-    os_printf("\r\n%s from 0x%x \r\n", SYS_VERSION, system_get_userbin_addr());
-    os_delay_us(100);
-}
 /*************************************************
 * Function: user_pre_init
 * Description: 
@@ -95,7 +72,6 @@ void  uart_pre_init(void)
 void //ICACHE_FLASH_ATTR 
 user_pre_init(void)
 {
-    //os_printf("Enter user_pre_init\n");
 	Sys_LayerInit();
     ESP_Init();
 }
@@ -109,8 +85,6 @@ user_pre_init(void)
 *************************************************/
 void user_init(void)
 {
-	//uart_pre_init();
-    //wifi_set_opmode(STATION_MODE);
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
     os_printf("\r\n%s from 0x%x \r\n", SYS_VERSION, system_get_userbin_addr());
     os_delay_us(100);
