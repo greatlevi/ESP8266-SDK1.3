@@ -951,7 +951,7 @@ PCT_8266SendMsgToCloud(ZC_MessageHead* pstruMsg,u8* pu8Msg,u16 Msglen)
     (void)PCT_SendMsgToCloud(&struHead, (u8*)pstruMsg);
 
 }
-
+#if 0
 /*************************************************
 * Function: PCT_HandleMoudleMsg
 * Description:
@@ -976,7 +976,7 @@ PCT_8266HandleMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
     pstruContoller->pstruMoudleFun->pfunSetTimer(PCT_TIMER_SENDHEART,
         PCT_TIMER_INTERVAL_HEART, &pstruContoller->u8HeartTimer);
 }
-
+#endif
 /*************************************************
 * Function: PCT_HandleMoudleMsg
 * Description:
@@ -1150,7 +1150,7 @@ PCT_HandleEvent(PTC_ProtocolCon *pstruContoller)
         case ZC_CODE_UNBIND:
             break;
         default:
-        	PCT_8266HandleMsg(pstruContoller, pstruBuffer);
+        	PCT_HandleMoudleMsg(pstruContoller, pstruBuffer);
             break;                                    
     }
 

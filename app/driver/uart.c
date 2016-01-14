@@ -22,6 +22,7 @@
 #include "uart_register.h"
 #include "user_interface.h"
 #include "user_config.h"
+#include "zc_hf_adpter.h"
 
 
 #ifdef Flash_Test
@@ -30,6 +31,8 @@
 
 // UartDev is defined and initialized in rom code.
 extern UartDevice    UartDev;
+UARTStruct UART0Port;
+
 
 LOCAL void uart0_rx_intr_handler(void *para);
 void uart0_handler(void);
@@ -269,34 +272,114 @@ PrintfHex(u8* data,u16 len)
 void ICACHE_FLASH_ATTR
 uart0_handler(void)
 {
-    uint8_t ch;
+    u16   roomleft = 0;
+    PKT_FIFO     *infor;
+    PKT_FIFO     *temp_info;
+    u8           ch = 0;
+    u8           LastCh;
+    PKT_DESC     *rx_desc = &(UART0Port.Rx_desc);
+    BUFFER_INFO  *rx_ring = &(UART0Port.Rx_Buffer); 
+    static u16 AMBodyLen =0;
+    static u8  PDMatchNum = 0;
+    unsigned long ulStatus; 
 
-    ETS_UART_INTR_DISABLE();/////////
+    ETS_UART_INTR_DISABLE();
+
+    Buf_GetRoomLeft(rx_ring, roomleft);
 	while(READ_PERI_REG(UART_STATUS(UART0)) & (UART_RXFIFO_CNT << UART_RXFIFO_CNT_S))
 	{
 	    WRITE_PERI_REG(0X60000914, 0x73); //WTD
 	    ch = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
         os_printf("ch is %02x\n", ch);            //可以打印接收
-        switch(ch)
+        switch (rx_desc->cur_type)
         {
+            case PKT_UNKNOWN:
+                if (STAND_HEADER == ch)
+                {
+                    PDMatchNum = 1;
+                }
+                else
+                {
+                    PDMatchNum = 0;
+                }
+                if (HEADER_LEN == PDMatchNum)   /* find header */
+                {   
+                    rx_desc->cur_num = rx_desc->pkt_num;                  
+                    infor = &(rx_desc->infor[rx_desc->cur_num]);
+                    infor->pkt_len = 0;
+                             
+                    rx_desc->cur_type = PKT_PUREDATA;           //match case 2:iwpriv ra0
+                    if(roomleft < 8)
+                    {
+                        rx_desc->cur_type= PKT_UNKNOWN;
+                    }
+                    else
+                    {
+                        Buf_Push(rx_ring, STAND_HEADER);
+                        roomleft -= 1;
+                        infor = &(rx_desc->infor[rx_desc->cur_num]);
+                        infor->pkt_len += 1;
+                    }                                      
+    				
+                    PDMatchNum = 0;
+                    continue;
+                }           
+                break;
+            
+            case PKT_PUREDATA:
+                infor = &(rx_desc->infor[rx_desc->cur_num]);
+                Buf_Push(rx_ring, ch);
+                roomleft--;
+                infor->pkt_len++;
+                if(infor->pkt_len == AC_PAYLOADLENOFFSET)
+                {
+                    AMBodyLen = (LastCh << 8) + ch;
+                }
+                else if(infor->pkt_len == AMBodyLen)
+                {
+                    //if task has consumed some packets
+                    if (rx_desc->cur_num != rx_desc->pkt_num)
+                    {   
+                        temp_info = infor;
+                        infor     = &(rx_desc->infor[rx_desc->pkt_num]);
+                        infor->pkt_len = temp_info->pkt_len;
+                        temp_info->pkt_len = 0;
+                        temp_info->pkt_type = PKT_UNKNOWN;
+                    }
+                    
+                    infor->pkt_type = rx_desc->cur_type;  // PKT_ATCMD / PKT_IWCMD;
+                    rx_desc->pkt_num++;
+                    rx_desc->cur_type = PKT_UNKNOWN;
+                    AMBodyLen = 0;
+                }   
 
-#ifdef OTA_Test
-        case 'K':
-        	system_restart();
-	        os_printf("重启系统\r\n");
-        	break;
-        case 'L':
-        	system_restart_enhance(0,0x81000);
-	        os_printf("重启到user2\r\n");
-//        	system_upgrade_reboot();    //system_get_boot_mode
-        	break;
-        case 'l':
-        	system_restart_enhance(0,0x01000);
-	        os_printf("重启到user1\r\n");
-        	break;
-#endif
-        default:
-        	break;
+                LastCh = ch;
+                /*
+                * if overflow,we discard the current packet
+                * example1:packet length > ring size
+                * example2:rx ring buff can no be freed by task as quickly as rx interrupt coming
+                */    
+                if ((!roomleft) || (rx_desc->pkt_num >= NUM_DESCS))
+                {   
+                    //rollback
+                    Buff_RollBack(rx_ring,infor->pkt_len);
+                    
+                    roomleft += infor->pkt_len;
+                    
+                    infor->pkt_type = PKT_UNKNOWN;
+                    infor->pkt_len = 0;
+                    rx_desc->cur_type = PKT_UNKNOWN;
+                    
+                    if (rx_desc->pkt_num >= NUM_DESCS)
+                    {
+                        rx_desc->pkt_num--;
+                    }
+                    
+                }      
+
+            	break;
+            default:
+            	break;
         }
 	}
 

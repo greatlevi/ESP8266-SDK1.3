@@ -84,6 +84,7 @@ user_pre_init(void)
 *************************************************/
 void user_init(void)
 {
+    UartInit();
 	uart_init(BIT_RATE_115200, BIT_RATE_115200);
     os_printf("\r\n%s from 0x%x \r\n", SYS_VERSION, system_get_userbin_addr());
     os_delay_us(100);

@@ -15,7 +15,14 @@
 #include <zc_protocol_controller.h>
 #include <zc_module_interface.h>
 #include "os_type.h"
+#include "bmd.h"
 
+#define NUM_DESCS                         30
+#define STAND_HEADER                      0x5A
+#define STAND_TAIL                        0x5B
+#define HEADER_LEN                        1 
+#define AC_PAYLOADLENOFFSET              3
+#define UART0RX_RING_LEN                 1024
 
 typedef struct 
 {
@@ -25,7 +32,6 @@ typedef struct
 
 
 #define HF_MAX_SOCKET_LEN    (1000)
-
 
 //#ifdef WIFI_ON_MCU
 typedef struct 
@@ -38,6 +44,34 @@ typedef struct
     u8 u8TokenKey[16];
 }HF_StaInfo;
 //#endif
+
+typedef enum {
+    PKT_UNKNOWN,
+    PKT_ATCMD,
+    PKT_PUREDATA,
+    PKT_ZADATA,
+    PKT_PRINTCMD,
+    PKT_HR01DATA
+}PKT_TYPE;
+
+typedef struct {
+    PKT_TYPE pkt_type;
+    u16   pkt_len;
+}PKT_FIFO;//packet infor is in sequence with index[0,num_desc-1] which mapping the sequence in rx
+
+typedef struct {
+    PKT_TYPE  cur_type;              //receiving packet:which packet type is receiving current? 
+    u8     cur_num;               //receiving packet:current index of receiving packet
+    u8     pkt_num;               //completely packets:packet number in ring buffer
+    PKT_FIFO  infor[NUM_DESCS];      //completely packets:FIFO,packet infor in ring
+}PKT_DESC; 
+
+typedef struct
+{
+    BUFFER_INFO                    Rx_Buffer;  //receive buffer
+    PKT_DESC                       Rx_desc;    //description       
+    BUFFER_INFO                    Tx_Buffer;  //transmit buffer    
+} UARTStruct;
 
 typedef enum{
     STATUS_BIT_NWP_INIT = 0, // If this bit is set: Network Processor is                           
@@ -73,6 +107,10 @@ void ESP_GotIp(void);
 void ESP_WakeUp(void);
 void ESP_UdpBroadcast(void);
 void ESP_CreateTaskTimer(void);
+void UARTRx_Buf_Init(UARTStruct *qp, u8 *rxbuf, u16 len);
+void UartInit(void);
+void Uart_RecvFromMcu(void);
+
 
 #ifdef __cplusplus
 }

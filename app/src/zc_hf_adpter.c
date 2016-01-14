@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <Ac_cfg.h>
 #include <ac_api.h>
+#include <bmd.h>
 #include "os_type.h"
 #include "espconn.h"
 #include "user_interface.h"
@@ -48,7 +49,7 @@ MSG_Buffer g_struRecvBuffer;
 MSG_Buffer g_struRetxBuffer;
 MSG_Buffer g_struClientBuffer;
 
-
+extern UARTStruct UART0Port;
 MSG_Queue  g_struRecvQueue;
 MSG_Buffer g_struSendBuffer[MSG_BUFFER_SEND_MAX_NUM];
 MSG_Queue  g_struSendQueue;
@@ -56,6 +57,8 @@ MSG_Queue  g_struSendQueue;
 u8 g_u8MsgBuildBuffer[MSG_BULID_BUFFER_MAXLEN];
 u8 g_u8ClientSendLen = 0;
 
+u8 UART0RxBuf[UART0RX_RING_LEN];
+u8 pCmdWifiBuf[UART0RX_RING_LEN];
 
 u16 g_u16TcpMss;
 u16 g_u16LocalPort;
@@ -81,6 +84,23 @@ LOCAL os_timer_t task_timer;
 ip_addr_t tcp_server_ip;   /* ·þÎñÆ÷ip*/
 
 extern volatile unsigned long  g_ulStatus;
+extern void AC_UartProcess(u8* inBuf, u32 datalen);
+extern void uart0_tx_buffer(uint8 *buf, uint16 len);
+
+
+/*************************************************
+* Function: ESP_UartSend
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void ICACHE_FLASH_ATTR
+ESP_UartSend(u8* inBuf, u32 datalen)
+{
+    uart0_tx_buffer(inBuf, (u16)datalen);
+}
 /*************************************************
 * Function: ESP_ReadDataFormFlash
 * Description: 
@@ -774,6 +794,7 @@ ESP_Init(void)
     g_struHfAdapter.pfunSendUdpData = ESP_SendUdpData;   
     g_struHfAdapter.pfunGetMac = ESP_GetMac;
     g_struHfAdapter.pfunReboot = ESP_Reboot;
+    g_struHfAdapter.pfunUartSend = ESP_UartSend;
 
     g_u16TcpMss = 1000;
 
@@ -865,7 +886,7 @@ ESP_Cloudfunc(void)
         ESP_Sleep();
         CLR_STATUS_BIT(g_ulStatus, STATUS_BIT_DISCONNECTED);
     }
-
+    Uart_RecvFromMcu();
     PCT_Run();
     
     if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
@@ -907,6 +928,98 @@ void ESP_CreateTaskTimer(void)
     os_timer_arm(&task_timer, 100, 0);
 
 }
+/*************************************************
+* Function: UARTRx_Buf_Init
+* Description:
+* Author: hx 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void ICACHE_FLASH_ATTR
+UARTRx_Buf_Init(UARTStruct *qp, u8 *rxbuf, u16 len)
+{
+    PKT_DESC     *rx_desc = &(qp->Rx_desc);
+    BUFFER_INFO  *rx_ring = &(qp->Rx_Buffer);
+    
+    rx_desc->pkt_num = 0;
+    rx_desc->cur_num = 0;
+    rx_desc->cur_type = PKT_UNKNOWN;
+    Buf_init(rx_ring,(rxbuf),(u16)len);
+}
+/*************************************************
+* Function: UartInit
+* Description:
+* Author: hx 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void ICACHE_FLASH_ATTR
+UartInit(void)
+{
+    UARTRx_Buf_Init((UARTStruct*)(&UART0Port),(u8 *)(UART0RxBuf), UART0RX_RING_LEN);                             
+    return;
+}
+/*************************************************
+* Function: Uart_RecvFromMcu
+* Description:
+* Author: hx 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+void ICACHE_FLASH_ATTR
+Uart_RecvFromMcu(void)
+{
+    PKT_FIFO     *infor;
+    PKT_DESC     *rx_desc = &(UART0Port.Rx_desc);
+    BUFFER_INFO  *rx_ring = &(UART0Port.Rx_Buffer); 
+    
+    PKT_TYPE rxpkt_type;
+    u16   rxpkt_len;
+    u16 i;
+
+    while (rx_desc->pkt_num)
+    {
+        //simulate FIFO,1st in,1st out
+        infor = &(rx_desc->infor[0]);
+        rxpkt_type = infor->pkt_type;
+        rxpkt_len  = infor->pkt_len;
+        
+        os_memset(pCmdWifiBuf, 0, UART0RX_RING_LEN);
+        
+        //copy from uart rx ring
+        for(i = 0; i < rxpkt_len; i++)       //O(n)
+        {
+            Buf_Pop(rx_ring,pCmdWifiBuf[i]);
+            //Printf_High("Buf_Pop=%x \n",pCmdBuf[i]);
+        }
+        //reset value
+        infor->pkt_type = PKT_UNKNOWN;
+        infor->pkt_len = 0;
+        
+        //shift FIFO
+        for (i = 0; i < (rx_desc->pkt_num) - 1; i++)  //O(n)
+        {
+            rx_desc->infor[i]= rx_desc->infor[i+1];
+        }  
+        rx_desc->pkt_num--;
+        
+        //handle previous packet
+        switch (rxpkt_type)
+        {
+            case PKT_PUREDATA:
+                AC_UartProcess(pCmdWifiBuf, rxpkt_len);
+                break;
+            default:
+                break;
+        }    
+        
+    }
+
+}
+
 /******************************* FILE END ***********************************/
 
 

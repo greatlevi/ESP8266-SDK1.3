@@ -98,8 +98,6 @@ typedef u32 (*pFunSendDataToMoudle)(u8 *pu8Data, u16 u16DataLen);
 typedef u32 (*pFunRecvDataFromMoudle)(u8 *pu8Data, u16 u16DataLen);
 typedef void (*pFunWriteFlashData)(u8 *pu8Data, u16 u16DataLen);
 
-
-
 typedef u32 (*pFunConnectToCloud)(PTC_Connection *pstruConnection);
 typedef u32 (*pFunListenClient)(PTC_Connection *pstruConnection);
 typedef u32 (*pFunSetTimer)(u8 u8Type, u32 Interval, u8 *pu8Index);
@@ -107,6 +105,7 @@ typedef void (*pFunStopTimer)(u8 u8TimerIndex);
 typedef void (*pFunRest)(void);
 typedef void (*pFunGetMac)(u8 *pu8Mac);
 typedef void (*pFunReboot)();
+typedef void (*pFunUartSend)(u8* inBuf, u32 datalen);
 
 typedef struct
 {
@@ -120,6 +119,7 @@ typedef struct
     pFunSendDataToMoudle        pfunSendToMoudle;
     pFunRest                    pfunRest;
     pFunReboot                  pfunReboot;
+    pFunUartSend                pfunUartSend;
     
     pFunSetTimer                pfunSetTimer;
     pFunStopTimer               pfunStopTimer;
