@@ -275,9 +275,6 @@ ESP_Rest(void)
     g_struZcConfigDb.struSwitchInfo.u32SecSwitch = 1;
     ESP_WriteDataToFlash((u8 *)&g_struZcConfigDb, sizeof(ZC_ConfigDB));
 
-	//g_struProtocolController.u8MainState = PCT_STATE_INIT;
-	//g_struProtocolController.u16SendBcNum = 0;
-    //TIMER_Init();
     g_struProtocolController.u8SmntFlag = SMART_CONFIG_STATE;
 	SmartLink();
 }
