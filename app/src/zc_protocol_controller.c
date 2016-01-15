@@ -47,7 +47,6 @@ PCT_CheckCrc(u8 *pu8Crc, u8 *pu8Data, u16 u16Len)
         return ZC_RET_ERROR;    
     }
 }
-
 /*************************************************
 * Function: PCT_SendNotifyMsg
 * Description: 
@@ -63,7 +62,6 @@ PCT_SendNotifyMsg(u8 u8NotifyCode)
     EVENT_BuildMsg(u8NotifyCode, 0, g_u8MsgBuildBuffer, &u16Len, NULL, 0);
     g_struProtocolController.pstruMoudleFun->pfunSendToMoudle(g_u8MsgBuildBuffer, u16Len);
 }
-
 /*************************************************
 * Function: PCT_SendHeartMsg
 * Description: 
@@ -91,8 +89,6 @@ PCT_SendHeartMsg()
         PCT_TIMER_INTERVAL_HEART, &g_struProtocolController.u8HeartTimer);
     
 }
-
-
 /*************************************************
 * Function: PCT_Init
 * Description: 
@@ -125,7 +121,6 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     MSG_Init();
     TIMER_Init();
 
-    //g_struProtocolController.u8SendToCloudFlag = 0;
     g_struProtocolController.u8keyRecv = PCT_KEY_UNRECVED;
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8SendMoudleTimer = PCT_TIMER_INVAILD;
@@ -352,7 +347,6 @@ PCT_ReconnectCloud(PTC_ProtocolCon *pstruContoller, u32 u32ReConnectTimer)
         return;
     }
     
-
     MSG_Init();
     g_struProtocolController.u8keyRecv = PCT_KEY_UNRECVED;
 
@@ -796,10 +790,7 @@ PCT_ModuleOtaFileEndMsg(PTC_ProtocolCon *pstruContoller, u8 *pu8Msg)
     {
         PCT_SendNotifyMsg(ZC_CODE_ACK);
     }
-    
-
 }
-
 /*************************************************
 * Function: PCT_HandleOtaFileBeginMsg
 * Description: 
@@ -815,7 +806,6 @@ PCT_HandleOtaFileBeginMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuff
     ZC_OtaFileBeginReq *pstruOta;
     ZC_Printf("Ota File Begin\n");
     
-
     pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
     pstruOta = (ZC_OtaFileBeginReq *)(pstruMsg + 1);
     
@@ -824,8 +814,6 @@ PCT_HandleOtaFileBeginMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuff
     pstruContoller->struOtaInfo.u8Crc[0] = pstruOta->u8TotalFileCrc[0];
     pstruContoller->struOtaInfo.u8Crc[1] = pstruOta->u8TotalFileCrc[1];    
     PCT_SendAckToCloud(pstruMsg->MsgId);
-
-
     return;
 }
 /*************************************************
@@ -930,30 +918,6 @@ PCT_HandleOtaEndMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
 }
 /*************************************************
 * Function: PCT_HandleMoudleMsg
-* Description: 
-* Author: cxy 
-* Returns: 
-* Parameter: 
-* History:
-*************************************************/
-void ICACHE_FLASH_ATTR
-PCT_8266SendMsgToCloud(ZC_MessageHead* pstruMsg,u8* pu8Msg,u16 Msglen)
-{
-    u16 u16Len = 0;
-    ZC_SecHead struHead;
-//payload不能为全0，所以关灯会失败
-    pu8Msg[0]=1;
-
-    PCT_SendEmptyMsg(pstruMsg->MsgId, ZC_SEC_ALG_AES);
-    EVENT_BuildMsg(pstruMsg->MsgCode, pstruMsg->MsgId,
-    		(u8*)pstruMsg, &u16Len, pu8Msg, Msglen);
-    struHead.u8SecType = ZC_SEC_ALG_AES;
-    struHead.u16TotalMsg = ZC_HTONS(u16Len);
-    (void)PCT_SendMsgToCloud(&struHead, (u8*)pstruMsg);
-
-}
-/*************************************************
-* Function: PCT_HandleMoudleMsg
 * Description:
 * Author: cxy
 * Returns:
@@ -965,8 +929,6 @@ PCT_HandleMoudleMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
 {
     ZC_MessageHead *pstruMsg;
     pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
-
-
 
     /*start send timer*/
     pstruContoller->pstruMoudleFun->pfunSetTimer(PCT_TIMER_SENDMOUDLE,
@@ -983,9 +945,6 @@ PCT_HandleMoudleMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
 
     /*Send to Moudle*/
     pstruContoller->pstruMoudleFun->pfunSendToMoudle((u8*)pstruMsg, pstruBuffer->u32Len);
-
-
-
 
     /*restart heart timer*/
     if (PCT_TIMER_INVAILD != pstruContoller->u8HeartTimer)
@@ -1113,7 +1072,7 @@ PCT_HandleEvent(PTC_ProtocolCon *pstruContoller)
         case ZC_CODE_OTA_FILE_END:
         case ZC_CODE_OTA_END:
         case ZC_CODE_OTA_CONFIRM:
-//            PCT_8266HandleMsg(pstruContoller, pstruBuffer);
+            PCT_HandleMoudleMsg(pstruContoller, pstruBuffer);
             break;
         case ZC_CODE_TOKEN_SET:
             ZC_Printf("ZC_CODE_TOKEN_SET\n");
@@ -1132,7 +1091,6 @@ PCT_HandleEvent(PTC_ProtocolCon *pstruContoller)
     pstruBuffer->u32Len = 0;
     pstruBuffer->u8Status = MSG_BUFFER_IDLE;
 
-    
     return;
 } 
 
@@ -1283,7 +1241,6 @@ PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData)
             g_struSendBuffer[u32Index].u8Status = MSG_BUFFER_FULL;
             MSG_PushMsg(&g_struSendQueue, (u8*)&g_struSendBuffer[u32Index]);
 
-//            ZCHEX_Printf((u8*)&g_struSendBuffer[u32Index], g_struSendBuffer[u32Index].u32Len);
             return ZC_RET_OK;
         }
     }

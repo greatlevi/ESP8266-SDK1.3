@@ -146,7 +146,6 @@ typedef struct
     u8   u8SendMoudleTimer;
     u8   u8RegisterTimer;
     u8   u8ReSendMoudleNum;
-    //u8   u8SendToCloudFlag;
     u8   u8SmntFlag;
     
     u8   *pu8SendMoudleBuffer;

@@ -81,8 +81,6 @@ LOCAL struct espconn user_udp_espconn;
 
 LOCAL os_timer_t task_timer;
 
-ip_addr_t tcp_server_ip;   /* ·þÎñÆ÷ip*/
-
 extern volatile unsigned long  g_ulStatus;
 extern void AC_UartProcess(u8* inBuf, u32 datalen);
 extern void uart0_tx_buffer(uint8 *buf, uint16 len);
@@ -476,9 +474,8 @@ ESP_DnsFoundHook(const char *name, ip_addr_t *ipaddr, void *arg)
             *((uint8 *)&ipaddr->addr), *((uint8 *)&ipaddr->addr + 1),
             *((uint8 *)&ipaddr->addr + 2), *((uint8 *)&ipaddr->addr + 3));
 
-    if (tcp_server_ip.addr == 0 && ipaddr->addr != 0) 
+    if (ipaddr->addr != 0)
     {
-        tcp_server_ip.addr = ipaddr->addr;
         os_memcpy(tcp_server_conn.proto.tcp->remote_ip, &ipaddr->addr, 4); // remote ip of tcp server which get by dns
         tcp_server_conn.proto.tcp->remote_port = ZC_CLOUD_PORT; // remote port of tcp server
         tcp_server_conn.proto.tcp->local_port = espconn_port(); //local port of ESP8266
@@ -515,12 +512,12 @@ u32 ICACHE_FLASH_ATTR
 ESP_ConnectToCloud(PTC_Connection *pstruConnection)
 {
     struct ip_addr struIp;
+    ip_addr_t tcp_server_ip;
     int retval = 255;
     u16 port;
     
     if (1 == g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig)
     {
-        //g_struProtocolController.u8SendToCloudFlag = 1;
         port = g_struZcConfigDb.struSwitchInfo.u16ServerPort;
         struIp.addr = ZC_HTONL(g_struZcConfigDb.struSwitchInfo.u32ServerIp);
         retval = HF_SUCCESS;
@@ -822,7 +819,7 @@ ESP_Init(void)
     os_memcpy(g_struRegisterInfo.u8DeviciId, g_u8DeviceId, ZC_HS_DEVICE_ID_LEN);
     os_memcpy(g_struRegisterInfo.u8DeviciId + ZC_HS_DEVICE_ID_LEN, &g_u64Domain, ZC_DOMAIN_LEN);
     os_memcpy(g_struRegisterInfo.u8EqVersion, g_u8EqVersion, ZC_EQVERSION_LEN);
-    
+
     ESP_CreateTaskTimer();
     return 1;
 
