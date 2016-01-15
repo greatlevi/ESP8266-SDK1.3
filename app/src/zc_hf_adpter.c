@@ -289,6 +289,12 @@ ESP_Rest(void)
 void ICACHE_FLASH_ATTR
 ESP_SendTcpData(u32 u32Fd, u8 *pu8Data, u16 u16DataLen, ZC_SendParam *pstruParam)
 {
+    struct espconn *pesp_conn = &tcp_client_conn;
+
+    remot_info *premot = NULL;
+    uint8 count = 0;
+    sint8 value = ESPCONN_OK;
+
     /* client/server */
     if (PCT_SERVER_TCP_SOCKET == u32Fd)
     {
@@ -297,8 +303,22 @@ ESP_SendTcpData(u32 u32Fd, u8 *pu8Data, u16 u16DataLen, ZC_SendParam *pstruParam
     }
     else if (PCT_CLIENT_TCP_SOCKET == u32Fd)
     {
-    	espconn_send(&tcp_client_conn, pu8Data, u16DataLen);
-        ZC_Printf("Send to app dataLen is :%d\n",u16DataLen);
+        if (espconn_get_connection_info(pesp_conn,&premot,0) == ESPCONN_OK)
+        {
+            ZC_Printf("link_cnt is %u\n", pesp_conn->link_cnt);
+            for (count = 0; count < pesp_conn->link_cnt; count ++)
+            {
+                 pesp_conn->proto.tcp->remote_port = premot[count].remote_port;
+                 
+                 pesp_conn->proto.tcp->remote_ip[0] = premot[count].remote_ip[0];
+                 pesp_conn->proto.tcp->remote_ip[1] = premot[count].remote_ip[1];
+                 pesp_conn->proto.tcp->remote_ip[2] = premot[count].remote_ip[2];
+                 pesp_conn->proto.tcp->remote_ip[3] = premot[count].remote_ip[3];
+
+                 espconn_send(pesp_conn, pu8Data, u16DataLen);
+                 ZC_Printf("Send to app dataLen is :%d\n",u16DataLen);
+            }
+        }    
     }
 }
 /*************************************************
@@ -357,7 +377,7 @@ ESP_Reboot(void)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_SendToCloudSuccess(void *arg)
 {
-    ZC_Printf("ESP_SendToCloudSuccess success!!! \n");
+    //ZC_Printf("ESP_SendToCloudSuccess success!!! \n");
 }
 /*************************************************
 * Function: ESP_DisconFromCloud
@@ -384,10 +404,7 @@ ESP_DisconFromCloud(void *arg)
         os_delay_us(1000);
 
         PCT_ReconnectCloud(&g_struProtocolController, 1000);
-        //g_struProtocolController.u8MainState = PCT_STATE_ACCESS_NET;
-		//tcp_server_conn.proto.tcp->local_port = espconn_port();
-		//espconn_connect(&tcp_server_conn);
-		//ZC_Printf("reconnect port %d \n",tcp_server_conn.proto.tcp->local_port);
+
     }
 }
 /*************************************************
@@ -582,10 +599,10 @@ LOCAL void ICACHE_FLASH_ATTR
 ESP_RecvFromClient(void *arg, char *pusrdata, unsigned short length)
 {
     struct espconn *pespconn = arg;
-    ZC_Printf("ZC_RecvDataFromClient :\r\n");
+    ZC_Printf("ZC_RecvDataFromClient\n");
 //    ZCHEX_Printf(pusrdata, length);
     os_memcpy(g_u8recvbuffer, pusrdata, length);
-    RecvDataFromClient(0, g_u8recvbuffer, length);   /* 第一个参数没意义，传0进去即可 */
+    ZC_RecvDataFromClient(0, g_u8recvbuffer, length);   /* 第一个参数没意义，传0进去即可 */
 }
 /*************************************************
 * Function: ESP_DisconCliet
@@ -614,7 +631,7 @@ ESP_ReconClient(void *arg, sint8 err)
     ZC_Printf("reconnect callback, error code %d !!! \r\n",err);
 }
 /*************************************************
-* Function: ESP_AcceptSuccessed
+* Function: ESP_ClientConnected
 * Description: 
 * Author: cxy 
 * Returns: 
@@ -622,9 +639,17 @@ ESP_ReconClient(void *arg, sint8 err)
 * History:
 *************************************************/
 LOCAL void ICACHE_FLASH_ATTR
-ESP_AcceptSuccessed(void *arg)
+ESP_ClientConnected(void *arg)
 {
     struct espconn *pesp_conn = arg;
+
+    ZC_Printf("Client connected\n");
+
+    espconn_regist_recvcb(&tcp_client_conn, ESP_RecvFromClient);
+    espconn_regist_reconcb(&tcp_client_conn, ESP_ReconClient);
+    espconn_regist_disconcb(&tcp_client_conn, ESP_DisconCliet);
+    espconn_regist_sentcb(&tcp_client_conn, ESP_SendToClient);
+
     os_memcpy(tcp_client_conn.proto.tcp->remote_ip, pesp_conn->proto.tcp->remote_ip,4);
     tcp_client_conn.proto.tcp->remote_port = pesp_conn->proto.tcp->remote_port;
 
@@ -649,7 +674,7 @@ ESP_ListenClient(PTC_Connection *pstruConnection)
 {
     tcp_client_conn.proto.tcp->local_port = pstruConnection->u16Port;
     ZC_Printf("Tcp Listen Port = %d\n", pstruConnection->u16Port);
-
+    espconn_regist_connectcb(&tcp_client_conn, ESP_ClientConnected);
     s8 ret = espconn_accept(&tcp_client_conn);
     ZC_Printf("espconn_accept [%d] !!! \r\n", ret);
 
@@ -682,7 +707,7 @@ LOCAL void ICACHE_FLASH_ATTR
 ESP_SendBroadcast(void *arg)
 {
     //    struct espconn *pespconn = arg;
-    ZC_Printf("Send Bc ok\n");
+    //ZC_Printf("Send Bc ok\n");
 }
 /*************************************************
 * Function: ESP_BcInit
@@ -709,12 +734,6 @@ ESP_BcInit(void)
     g_struProtocolController.struClientConnection.u32Socket = PCT_CLIENT_TCP_SOCKET;
     tcp_client_conn.proto.tcp->local_port = ZC_SERVER_PORT;
     
-    espconn_regist_connectcb(&tcp_client_conn, ESP_AcceptSuccessed);
-    espconn_regist_recvcb(&tcp_client_conn, ESP_RecvFromClient);
-    espconn_regist_reconcb(&tcp_client_conn, ESP_ReconClient);
-    espconn_regist_disconcb(&tcp_client_conn, ESP_DisconCliet);
-    espconn_regist_sentcb(&tcp_client_conn, ESP_SendToClient);
-
     g_struProtocolController.u16SendBcNum = 0;
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
     g_u32BcSleepCount = 10;
@@ -840,6 +859,7 @@ void //ICACHE_FLASH_ATTR
 ESP_WakeUp()
 {
     PCT_WakeUp();
+    ZC_StartClientListen();
 }
 /*************************************************
 * Function: ESP_Sleep
@@ -1007,7 +1027,7 @@ Uart_RecvFromMcu(void)
         for(i = 0; i < rxpkt_len; i++)       //O(n)
         {
             Buf_Pop(rx_ring,pCmdWifiBuf[i]);
-            ZC_Printf("Buf_Pop=%x \n",pCmdWifiBuf[i]);
+            //ZC_Printf("Buf_Pop=%x \n",pCmdWifiBuf[i]);
         }
         //reset value
         infor->pkt_type = PKT_UNKNOWN;

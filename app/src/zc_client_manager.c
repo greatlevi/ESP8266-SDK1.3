@@ -180,7 +180,7 @@ void //ICACHE_FLASH_ATTR
 ZC_ClientWakeUp(void)
 {
     g_struClientInfo.u8ClientStates = ZC_CLIENT_STATUS_WAKEUP;
-	ZC_Printf("ZC_CLIENT_STATUS_WAKEUP \n");
+	//ZC_Printf("ZC_CLIENT_STATUS_WAKEUP \n");
 }
 /*************************************************
 * Function: ZC_ClientSleep
@@ -278,8 +278,6 @@ ZC_RecvDataFromClient(u32 ClientId, u8 *pu8Data, u32 u32DataLen)
                 break;
             }
 
-            ZCHEX_Printf(g_u8MsgBuildBuffer, u32CiperLen);
-
             pstruMsg->OptNum = pstruMsg->OptNum + 1;
             struOpt.OptCode = ZC_HTONS(ZC_OPT_SSESSION);
             struOpt.OptLen = ZC_HTONS(sizeof(ZC_SsessionInfo));
@@ -311,7 +309,7 @@ ZC_RecvDataFromClient(u32 ClientId, u8 *pu8Data, u32 u32DataLen)
             ZC_TraceData(g_struClientBuffer.u8MsgBuffer, g_struClientBuffer.u32Len);
             
             /*send to moudle*/
-//            g_struProtocolController.pstruMoudleFun->pfunSendToMoudle(g_struClientBuffer.u8MsgBuffer, g_struClientBuffer.u32Len);
+            g_struProtocolController.pstruMoudleFun->pfunSendToMoudle(g_struClientBuffer.u8MsgBuffer, g_struClientBuffer.u32Len);
         }while(0);
         g_struClientBuffer.u8Status = MSG_BUFFER_IDLE;
         g_struClientBuffer.u32Len = 0;
@@ -322,116 +320,6 @@ ZC_RecvDataFromClient(u32 ClientId, u8 *pu8Data, u32 u32DataLen)
     return;
 }
 
-/*************************************************
-* Function: ZC_RecvDataFromClient
-* Description:
-* Author: cxy
-* Returns:
-* Parameter:
-* History:
-*************************************************/
-void ICACHE_FLASH_ATTR
-SendDataToClient(u8 u8MsgCode, u8 u8MsgId, u8 *pu8Key, u8* data, u16 len)
-{
-    u16 u16Len;
-    u32 u32CiperLen;
-    ZC_SecHead *pstruHead;
-    ZC_SendParam struParam;
-    u8 u8Iv[ZC_HS_SESSION_KEY_LEN];
-	pstruHead = (ZC_SecHead*)(g_u8MsgBuildBuffer);
-
-	EVENT_BuildMsg(u8MsgCode, u8MsgId, g_u8MsgBuildBuffer + sizeof(ZC_SecHead), &u16Len,
-			data, len);
-	memcpy(u8Iv, pu8Key, ZC_HS_SESSION_KEY_LEN);
-	AES_CBC_Encrypt(g_u8MsgBuildBuffer + sizeof(ZC_SecHead), u16Len,
-		pu8Key, ZC_HS_SESSION_KEY_LEN,
-		u8Iv, ZC_HS_SESSION_KEY_LEN,
-		g_u8MsgBuildBuffer + sizeof(ZC_SecHead), &u32CiperLen);
-
-	pstruHead->u8SecType = ZC_SEC_ALG_AES;
-	pstruHead->u16TotalMsg = ZC_HTONS((u16)u32CiperLen);
-
-	struParam.u8NeedPoll = 0;
-	g_struProtocolController.pstruMoudleFun->pfunSendTcpData(PCT_CLIENT_TCP_SOCKET, g_u8MsgBuildBuffer,
-		u32CiperLen + sizeof(ZC_SecHead), &struParam);
-}
-/*************************************************
-* Function: ZC_RecvDataFromClient
-* Description:
-* Author: cxy
-* Returns:
-* Parameter:
-* History:
-*************************************************/
-void ICACHE_FLASH_ATTR
-RecvDataFromClient(u32 ClientId, u8 *pu8Data, u32 u32DataLen)
-{
-    u32 u32RetVal;
-    ZC_MessageHead *pstruMsg;
-    ZC_SecHead *pstruHead;
-    u32 u32CiperLen;
-    u8 *pu8Key;
-    u8 u8Iv[ZC_HS_SESSION_KEY_LEN];
-    u8 Data[MSG_BULID_BUFFER_MAXLEN];
-    u16 DataLen;
-
-    /*can hanle it,get aes key*/
-    ZC_GetStoreInfor(ZC_GET_TYPE_TOKENKEY, &pu8Key);
-
-    u32RetVal = ZC_CheckClientIdle(ClientId);
-    if (ZC_RET_ERROR == u32RetVal)
-    {
-        SendDataToClient(ZC_CODE_ERR, 0, pu8Key, NULL, 0);
-        ZC_Printf("ZC_RET_ERROR \n");
-        return;
-    }
-
-    /*set client busy*/
-    ZC_SetClientBusy(ClientId);
-
-    u32RetVal = MSG_RecvData(&g_struClientBuffer, pu8Data, u32DataLen);
-    if ((MSG_BUFFER_FULL == g_struClientBuffer.u8Status)&&(ZC_RET_OK == u32RetVal))
-    {
-        do
-        {
-            pstruHead = (ZC_SecHead *)g_struClientBuffer.u8MsgBuffer;
-            if (ZC_HTONS(pstruHead->u16TotalMsg) >= MSG_BULID_BUFFER_MAXLEN)
-            {
-                break;
-            }
-            memcpy(u8Iv, pu8Key, ZC_HS_SESSION_KEY_LEN);
-            AES_CBC_Decrypt(g_struClientBuffer.u8MsgBuffer + sizeof(ZC_SecHead), ZC_HTONS(pstruHead->u16TotalMsg),
-                pu8Key, ZC_HS_SESSION_KEY_LEN,
-                u8Iv, ZC_HS_SESSION_KEY_LEN,
-                g_u8MsgBuildBuffer, &u32CiperLen);
-            pstruMsg = (ZC_MessageHead*)(g_u8MsgBuildBuffer);
-            if(ZC_RET_ERROR == PCT_CheckCrc(pstruMsg->TotalMsgCrc, (u8 *)(pstruMsg + 1), ZC_HTONS(pstruMsg->Payloadlen)))
-            {
-                break;
-            }
-            pstruMsg->Payloadlen = ZC_HTONS(ZC_HTONS(pstruMsg->Payloadlen) + sizeof(ZC_MessageOptHead) + sizeof(ZC_SsessionInfo));
-            if (ZC_HTONS(pstruMsg->Payloadlen) > MSG_BULID_BUFFER_MAXLEN)
-            {
-                break;
-            }
-
-            /*copy message*/
-            DataLen = ZC_HTONS(pstruMsg->Payloadlen) - (sizeof(ZC_MessageOptHead) + sizeof(ZC_SsessionInfo));
-            memcpy(Data, (u8*)(pstruMsg+1), DataLen);
-
-            Data[0] = 1;
-            ZCHEX_Printf(Data, DataLen);
-
-            SendDataToClient(pstruMsg->MsgCode, pstruMsg->MsgId, pu8Key, Data, DataLen);
-        }while(0);
-        g_struClientBuffer.u8Status = MSG_BUFFER_IDLE;
-        g_struClientBuffer.u32Len = 0;
-        ZC_SetClientFree(ClientId);
-
-    }
-
-    return;
-}
 /******************************* FILE END ***********************************/
 
 

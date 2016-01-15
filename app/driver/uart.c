@@ -290,7 +290,7 @@ uart0_handler(void)
 	{
 	    WRITE_PERI_REG(0X60000914, 0x73); //WTD
 	    ch = READ_PERI_REG(UART_FIFO(UART0)) & 0xFF;
-        os_printf("ch is %02x\n", ch);            //可以打印接收
+        //os_printf("ch is %02x\n", ch);            //可以打印接收
         switch (rx_desc->cur_type)
         {
             case PKT_UNKNOWN:
