@@ -824,7 +824,7 @@ ESP_Init(void)
     g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
     g_struUartBuffer.u32RecvLen = 0;
     ZC_Printf("u32SecSwitch %d\n",g_struZcConfigDb.struSwitchInfo.u32SecSwitch);
-    //ESP_ReadDataFormFlash();
+    ESP_ReadDataFormFlash();
     ESP_BcInit();
 
     os_memset(g_u8DeviceId, '0', 16);

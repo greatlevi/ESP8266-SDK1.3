@@ -970,6 +970,8 @@ PCT_SetTokenKey(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
     ZC_MessageHead *pstruMsg;
     ZC_TokenSetReq *pstruSetKey;
 
+    ZC_Printf("ZC_CODE_TOKEN_SET\n");
+
     pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
     pstruSetKey = (ZC_TokenSetReq *)(pstruMsg + 1);
 
@@ -1075,7 +1077,6 @@ PCT_HandleEvent(PTC_ProtocolCon *pstruContoller)
             PCT_HandleMoudleMsg(pstruContoller, pstruBuffer);
             break;
         case ZC_CODE_TOKEN_SET:
-            ZC_Printf("ZC_CODE_TOKEN_SET\n");
             PCT_SetTokenKey(pstruContoller, pstruBuffer);
             break;
         case ZC_CODE_RESET_NETWORK:

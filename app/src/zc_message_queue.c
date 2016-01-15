@@ -282,8 +282,6 @@ MSG_RecvDataFromCloud(u8 *pu8Data, u32 u32DataLen)
 
             g_struRecvBuffer.u32Len = u16PlainLen;
 
-//            ZCHEX_Printf(g_struRecvBuffer.u8MsgBuffer, g_struRecvBuffer.u32Len);
-
             if (ZC_RET_OK == u32RetVal)
             {
                 u32RetVal = MSG_PushMsg(&g_struRecvQueue, (u8*)&g_struRecvBuffer);
