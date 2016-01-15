@@ -325,8 +325,8 @@ PCT_ConnectCloud(PTC_ProtocolCon *pstruContoller)
         return;
     }
     //wait for tcp connect success
-    pstruContoller->u8MainState = PCT_STATE_WAIT_ACCESS;
-	pstruContoller->u8keyRecv = PCT_KEY_UNRECVED;
+    //pstruContoller->u8MainState = PCT_STATE_WAIT_ACCESS;
+	//pstruContoller->u8keyRecv = PCT_KEY_UNRECVED;
 }
 
 /*************************************************
@@ -367,7 +367,7 @@ PCT_ReconnectCloud(PTC_ProtocolCon *pstruContoller, u32 u32ReConnectTimer)
 
     pstruContoller->pstruMoudleFun->pfunSetTimer(PCT_TIMER_RECONNECT, 
         u32ReConnectTimer, &pstruContoller->u8ReconnectTimer);
-    ZC_Printf("u8ReconnectTimer = %d\n",pstruContoller->u8ReconnectTimer);
+    //ZC_Printf("u8ReconnectTimer = %d\n",pstruContoller->u8ReconnectTimer);
     pstruContoller->struCloudConnection.u32Socket = PCT_SERVER_TCP_SOCKET;//PCT_INVAILD_SOCKET;
     pstruContoller->u8keyRecv = PCT_KEY_UNRECVED; 
     pstruContoller->u8MainState = PCT_STATE_INIT;
@@ -497,10 +497,10 @@ PCT_RecvAccessMsg2(PTC_ProtocolCon *pstruContoller)
                     pstruAccessPoint=(ZC_AccessPoint*)(pstruMsg + 1);
                     u32Addr = ZC_HTONL(pstruAccessPoint->u32ServerAddr);
                     u16Port = ZC_HTONS(pstruAccessPoint->u16ServerPort);
-
+                    ZC_Printf("Recv Access Point ok,Cloud Addr=0x%08x,port=%u!\n",u32Addr,u16Port);
                     ZC_StoreAccessInfo((u8 *)&u32Addr,(u8 *)&u16Port);
                     PCT_DisConnectCloud(pstruContoller);
-                    ZC_Printf("Recv Access Point ok,Cloud Addr=%x,port=%u!\n",u32Addr,u16Port);
+                    //ZC_Printf("Recv Access Point ok,Cloud Addr=%x,port=%u!\n",u32Addr,u16Port);
                 }
             }
             else

@@ -203,7 +203,7 @@ ESP_SetTimer(u8 u8Type, u32 u32Interval, u8 *pu8TimeIndex)
     u32Retval = TIMER_FindIdleTimer(&u8TimerIndex);
     if (ZC_RET_OK == u32Retval)
     {
-        ZC_Printf("Set timer: type is %u, index is %u, interval is %u\n", u8Type, u8TimerIndex, u32Interval);
+        //ZC_Printf("Set timer: type is %u, index is %u, interval is %u\n", u8Type, u8TimerIndex, u32Interval);
         TIMER_AllocateTimer(u8Type, u8TimerIndex, (u8*)&g_struEspTimer[u8TimerIndex]);
         *pu8TimeIndex = u8TimerIndex;
         g_struEspTimer[u8TimerIndex].u8Index = u8TimerIndex;
@@ -371,17 +371,23 @@ LOCAL void ICACHE_FLASH_ATTR
 ESP_DisconFromCloud(void *arg)
 {
     struct espconn *pespconn = arg;
+    
     if (SMART_CONFIG_STATE == g_struProtocolController.u8SmntFlag)
     {
         return;
     }
 
-	ZC_Printf("ESP_DisconFromCloud !!! %d\n",g_struProtocolController.u8MainState);
-    if(tcp_server_conn.proto.tcp->remote_port == pespconn->proto.tcp->remote_port)
+	ZC_Printf("ESP_DisconFromCloud !!!\n");
+    if (tcp_server_conn.proto.tcp->remote_port == pespconn->proto.tcp->remote_port)
     {
+        (void)espconn_disconnect(&tcp_server_conn);
+        os_delay_us(1000);
+
+        PCT_ReconnectCloud(&g_struProtocolController, 1000);
+        //g_struProtocolController.u8MainState = PCT_STATE_ACCESS_NET;
 		//tcp_server_conn.proto.tcp->local_port = espconn_port();
-		espconn_connect(&tcp_server_conn);
-		ZC_Printf("reconnect port %d \n",tcp_server_conn.proto.tcp->local_port);
+		//espconn_connect(&tcp_server_conn);
+		//ZC_Printf("reconnect port %d \n",tcp_server_conn.proto.tcp->local_port);
     }
 }
 /*************************************************
@@ -395,10 +401,10 @@ ESP_DisconFromCloud(void *arg)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_RecvFromCloud(void *arg, char *pusrdata, unsigned short length)
 {
-    //received some data from tcp connection
+    //received some data from tcp connection    
+    ZC_Printf("recv from cloud\n");
     os_memcpy(g_u8recvbuffer, pusrdata, length);
     MSG_RecvDataFromCloud(g_u8recvbuffer, length);
-    ZC_Printf("recv from cloud\n");
 }
 /*************************************************
 * Function: ESP_ConnectedCloud
@@ -545,7 +551,7 @@ ESP_ConnectToCloud(PTC_Connection *pstruConnection)
         ZC_Printf("Connect not ok\n");
     }
     g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
-
+    g_struProtocolController.u8MainState = PCT_STATE_INIT;
     ZC_Rand(g_struProtocolController.RandMsg);
 
     return ZC_RET_OK;
