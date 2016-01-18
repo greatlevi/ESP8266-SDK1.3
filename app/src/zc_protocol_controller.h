@@ -66,8 +66,13 @@
 #define    PCT_OTA_REST_ON       (1)
 #define    PCT_OTA_REST_OFF       (0)
 
+#define    PCT_OTA_BUF_LEN        (4096)
 
-
+typedef struct
+{
+    u8 u8OtaBuf[PCT_OTA_BUF_LEN];
+    u16 u16DateUsed;
+}PTC_OtaBuf;
 
 typedef struct
 {
@@ -149,6 +154,8 @@ typedef struct
     u8   u8SmntFlag;
     
     u8   *pu8SendMoudleBuffer;
+    u32  u32UserBinNum;
+    u32  u32OtaSectorNum;
     
     PTC_Connection struCloudConnection;
     PTC_Connection struClientConnection;

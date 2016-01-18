@@ -141,14 +141,10 @@ SmartLink(void)
     smartconfig_stop();
 	smartconfig_start(smartlink_done);
 }
+
 void ICACHE_FLASH_ATTR
 SmartLinkInter(void)
-{
-//	SysTask.m_WifiState = WIFI_SMARTLINK;
-//#ifdef Network_Test
-//	Le_tcpclient_discon(3);
-//#endif
-//	SamrtLink();
+{ 
 	ESP_Rest();
 }
 
@@ -162,13 +158,12 @@ SmartLinkInter(void)
 void ICACHE_FLASH_ATTR
 WifiInit(void)
 {
-
 	struct station_config s_staconf;
 
-	if(wifi_get_opmode_default() != 1)
+	if(STATION_MODE != wifi_get_opmode_default())
 	{
 		os_printf("not STATION_MODE \r\n");
-		wifi_set_opmode(1);//STATION_MODE
+		wifi_set_opmode(STATION_MODE);//STATION_MODE
 	}
 
 	wifi_station_get_config_default(&s_staconf);
@@ -176,7 +171,8 @@ WifiInit(void)
 	{
 		wifi_station_set_config(&s_staconf);
 		wifi_station_connect();
-	} else
+	}
+    else
 	{
 		SmartLinkInter();
 	}

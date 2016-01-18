@@ -20,6 +20,7 @@
 PTC_ProtocolCon  g_struProtocolController;
 extern ZC_Timer g_struTimer[ZC_TIMER_MAX_NUM];
 extern struct espconn tcp_server_conn;
+PTC_OtaBuf g_struOtaBuf;
 
 /*************************************************
 * Function: PCT_CheckCrc
@@ -130,7 +131,8 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
 
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
     g_struProtocolController.u8SmntFlag = 0;
-
+    
+    g_struOtaBuf.u16DateUsed = 0;
     ZC_ClientInit();
 }
 /*************************************************
@@ -697,7 +699,7 @@ PCT_ModuleOtaFileBeginMsg(PTC_ProtocolCon *pstruContoller, u8 *pu8Msg)
 {
     ZC_OtaFileBeginReq *pstruOta;
     ZC_Printf("Ota File Begin\n");
-    
+
     pstruOta = (ZC_OtaFileBeginReq *)(pu8Msg);
     
     pstruContoller->struOtaInfo.u32RecvOffset = 0;
@@ -805,7 +807,7 @@ PCT_HandleOtaFileBeginMsg(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuff
     ZC_MessageHead *pstruMsg;
     ZC_OtaFileBeginReq *pstruOta;
     ZC_Printf("Ota File Begin\n");
-    
+    g_struProtocolController.u32OtaSectorNum = g_struProtocolController.u32UserBinNum;
     pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
     pstruOta = (ZC_OtaFileBeginReq *)(pstruMsg + 1);
     
@@ -1210,6 +1212,7 @@ PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData)
 
     if (ZC_RET_ERROR == u32RetVal)
     {
+        ZC_Printf("PCT_SendMsgToCloud error1\n");
         return ZC_RET_ERROR;
     }
 
@@ -1217,6 +1220,7 @@ PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData)
     
     if (u16Len > MSG_BUFFER_MAXLEN)
     {
+        ZC_Printf("PCT_SendMsgToCloud error2\n");
         return ZC_RET_ERROR;
     }
 
@@ -1231,6 +1235,7 @@ PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData)
             
             if (ZC_RET_ERROR == u32RetVal)
             {
+                ZC_Printf("PCT_SendMsgToCloud error3\n");
                 return ZC_RET_ERROR;
             }
             
@@ -1245,7 +1250,7 @@ PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData)
             return ZC_RET_OK;
         }
     }
-
+    ZC_Printf("PCT_SendMsgToCloud error4\n");
     return ZC_RET_ERROR;
 }
 

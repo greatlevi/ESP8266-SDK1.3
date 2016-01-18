@@ -22,6 +22,8 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "user_config.h"
+#include "spi_flash.h"
+#include "upgrade.h"
 
 #define  FLASH_ADDRESS            0x200000
 
@@ -50,6 +52,7 @@ MSG_Buffer g_struRetxBuffer;
 MSG_Buffer g_struClientBuffer;
 
 extern UARTStruct UART0Port;
+extern PTC_OtaBuf g_struOtaBuf;
 MSG_Queue  g_struRecvQueue;
 MSG_Buffer g_struSendBuffer[MSG_BUFFER_SEND_MAX_NUM];
 MSG_Queue  g_struSendQueue;
@@ -62,7 +65,6 @@ u8 pCmdWifiBuf[UART0RX_RING_LEN];
 
 u16 g_u16TcpMss;
 u16 g_u16LocalPort;
-
 
 u8 g_u8recvbuffer[HF_MAX_SOCKET_LEN];
 ZC_UartBuffer g_struUartBuffer;
@@ -230,7 +232,20 @@ ESP_SetTimer(u8 u8Type, u32 u32Interval, u8 *pu8TimeIndex)
 u32 ICACHE_FLASH_ATTR
 ESP_FirmwareUpdateFinish(u32 u32TotalLen)
 {
-    ZC_RET_OK;
+    u32 ret;
+    if (0 != g_struOtaBuf.u16DateUsed)
+    {
+        ZC_Printf("OTA Finished: used is %d\n", g_struOtaBuf.u16DateUsed);
+        ret = ESP_FlashEraseAddWrite();
+        if (ZC_RET_OK != ret)
+        {
+            ZC_Printf("ESP_FlashEraseAddWrite error3\n");
+            return ret;
+        }
+    }
+    system_upgrade_flag_set(UPGRADE_FLAG_FINISH);
+    system_upgrade_reboot();
+    return ZC_RET_OK;
 }
 /*************************************************
 * Function: ESP_FirmwareUpdate
@@ -243,6 +258,83 @@ ESP_FirmwareUpdateFinish(u32 u32TotalLen)
 u32 ICACHE_FLASH_ATTR
 ESP_FirmwareUpdate(u8 *pu8FileData, u32 u32Offset, u32 u32DataLen)
 {
+    u32 u32LeftBuf, u32UsedLen;
+    u32 ret;
+
+    u32UsedLen = g_struOtaBuf.u16DateUsed;
+    u32LeftBuf = PCT_OTA_BUF_LEN - u32UsedLen;
+    ZC_Printf("OTA: used is %d, left is %d\n", u32UsedLen, u32LeftBuf);
+    if (u32LeftBuf < u32DataLen)
+    {
+        /* copy as much as possible */
+        os_memcpy(&g_struOtaBuf.u8OtaBuf[u32UsedLen],
+                pu8FileData,
+                u32LeftBuf);
+        /* erase & write */
+        ret = ESP_FlashEraseAddWrite();
+        if (ZC_RET_OK != ret)
+        {
+            ZC_Printf("ESP_FlashEraseAddWrite error1\n");
+            return ret;
+        }
+        /* copy */
+        os_memcpy(&g_struOtaBuf.u8OtaBuf, pu8FileData + u32LeftBuf, u32DataLen - u32LeftBuf);
+        g_struOtaBuf.u16DateUsed = u32DataLen - u32LeftBuf;
+        return ZC_RET_OK;
+    }
+    else 
+    {
+        os_memcpy(&g_struOtaBuf.u8OtaBuf[u32UsedLen],
+                pu8FileData,
+                u32DataLen);
+        g_struOtaBuf.u16DateUsed += u32DataLen;
+        if (PCT_OTA_BUF_LEN == g_struOtaBuf.u16DateUsed)
+        {
+            ret = ESP_FlashEraseAddWrite();
+            if (ZC_RET_OK != ret)
+            {
+                ZC_Printf("ESP_FlashEraseAddWrite error2\n");
+                return ret;
+            }
+        }
+    }
+    
+    return ZC_RET_OK;
+}
+/*************************************************
+* Function: ESP_FlashEraseAddWrite
+* Description: 
+* Author: cxy 
+* Returns: 
+* Parameter: 
+* History:
+*************************************************/
+u32 ESP_FlashEraseAddWrite(void)
+{
+    SpiFlashOpResult ret;
+    ret = spi_flash_erase_sector(g_struProtocolController.u32OtaSectorNum);
+    system_soft_wdt_feed();
+    if (SPI_FLASH_RESULT_OK == ret)
+    {
+        system_soft_wdt_feed();
+        ret = spi_flash_write(g_struProtocolController.u32OtaSectorNum * SECTOR_SIZE,
+                                (uint32 *)g_struOtaBuf.u8OtaBuf,
+                                SECTOR_SIZE);
+        if (SPI_FLASH_RESULT_OK == ret)
+        {
+            ZC_Printf("OTA Write OK, sector num is 0x%x\n", g_struProtocolController.u32OtaSectorNum);
+            g_struProtocolController.u32OtaSectorNum++;
+            g_struOtaBuf.u16DateUsed = 0;
+        }
+        else
+        {
+            return ZC_RET_ERROR; 
+        }
+    }
+    else 
+    {
+        return ZC_RET_ERROR;
+    }
     return ZC_RET_OK;
 }
 /*************************************************
@@ -377,7 +469,7 @@ ESP_Reboot(void)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_SendToCloudSuccess(void *arg)
 {
-    //ZC_Printf("ESP_SendToCloudSuccess success!!! \n");
+    ZC_Printf("ESP_SendToCloudSuccess success!!! \n");
 }
 /*************************************************
 * Function: ESP_DisconFromCloud
@@ -794,6 +886,7 @@ ESP_Init(void)
 {
 	char mac_buf[8];
     char mac_string[16];
+    u32 u32BinAddr;
 	g_u64Domain = ((((u64)((SUB_DOMAIN_ID & 0xff00) >> 8)) << 48) + (((u64)(SUB_DOMAIN_ID & 0xff)) << 56) + (((u64)MAJOR_DOMAIN_ID & 0xff) << 40) + ((((u64)MAJOR_DOMAIN_ID & 0xff00) >> 8) << 32)
 	+ ((((u64)MAJOR_DOMAIN_ID & 0xff0000) >> 16) << 24)
 	+ ((((u64)MAJOR_DOMAIN_ID & 0xff000000) >> 24) << 16)
@@ -823,7 +916,6 @@ ESP_Init(void)
 
     g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
     g_struUartBuffer.u32RecvLen = 0;
-    ZC_Printf("u32SecSwitch %d\n",g_struZcConfigDb.struSwitchInfo.u32SecSwitch);
     ESP_ReadDataFormFlash();
     ESP_BcInit();
 
@@ -842,6 +934,15 @@ ESP_Init(void)
     os_memcpy(g_struRegisterInfo.u8DeviciId + ZC_HS_DEVICE_ID_LEN, &g_u64Domain, ZC_DOMAIN_LEN);
     os_memcpy(g_struRegisterInfo.u8EqVersion, g_u8EqVersion, ZC_EQVERSION_LEN);
 
+    u32BinAddr = system_get_userbin_addr();
+    if (USER1_BIN_ADDR == u32BinAddr)
+    {
+        g_struProtocolController.u32UserBinNum = 0x81;
+    }
+    else if (USER2_BIN_ADDR == u32BinAddr)
+    {
+        g_struProtocolController.u32UserBinNum = 0x1;
+    }
     ESP_CreateTaskTimer();
     return 1;
 
@@ -931,6 +1032,7 @@ ESP_Cloudfunc(void)
         MSG_SendDataToCloud((u8*)&g_struProtocolController.struCloudConnection);
     }
     ZC_SendBc();
+    
     os_timer_setfn(&task_timer, (os_timer_func_t *)ESP_Cloudfunc, NULL);
     os_timer_arm(&task_timer, 100, 0);
 

@@ -26,6 +26,11 @@
 
 #define SMART_CONFIG_STATE               1
 
+#define USER1_BIN_ADDR                   0x1000
+#define USER2_BIN_ADDR                   0x81000
+
+#define SECTOR_SIZE                      PCT_OTA_BUF_LEN
+
 typedef struct 
 {
     os_timer_t timer;
@@ -113,6 +118,7 @@ void UARTRx_Buf_Init(UARTStruct *qp, u8 *rxbuf, u16 len);
 void UartInit(void);
 void Uart_RecvFromMcu(void);
 void ESP_ChangeToNormalState(void);
+u32 ESP_FlashEraseAddWrite(void);
 
 
 #ifdef __cplusplus
