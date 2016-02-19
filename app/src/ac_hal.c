@@ -16,6 +16,8 @@
 #include <ac_cfg.h>
 #include <zc_configuration.h>
 #include <zc_module_interface.h>
+
+
 u32 g_u32CloudStatus = CLOUDDISCONNECT;
 typedef struct tag_STRU_LED_ONOFF
 {		
@@ -267,13 +269,12 @@ AC_BlinkLed(unsigned char blink)
 {
     if(blink)
     {
-
+        //GPIO_OUTPUT_SET(GPIO_ID_PIN(4), 1);
     }
     else
     {
-
+        //GPIO_OUTPUT_SET(GPIO_ID_PIN(4), 0); 
     }
-
 }
 /*************************************************
 * Function: AC_DealLed

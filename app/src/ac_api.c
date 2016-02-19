@@ -334,6 +334,11 @@ AC_RecvMessage(ZC_MessageHead *pstruMsg)
         case ZC_CODE_CLOUD_DISCONNECTED:
             AC_DealNotifyMessage(pstruMsg, &struOptList, pu8Playload);
             break;
+#if 0
+        case MSG_SERVER_CLIENT_SET_LED_ONOFF_REQ:
+            AC_DealLed(pstruMsg, &struOptList, pu8Playload);
+            break;
+#endif
         //设备事件类消息    
         default:
         {

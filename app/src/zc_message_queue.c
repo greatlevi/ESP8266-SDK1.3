@@ -310,7 +310,8 @@ MSG_SendDataToCloud(u8 *pu8Connection)
     pstruBuf = (MSG_Buffer *)MSG_PopMsg(&g_struSendQueue); 
     
     if (NULL == pstruBuf)return;
-    
+
+    //ZC_Printf("Pop Q!!!\n");
     u16DataLen = pstruBuf->u32Len; 
     struParam.u8NeedPoll = 0;
     g_struProtocolController.pstruMoudleFun->pfunSendTcpData(pstruConnection->u32Socket, pstruBuf->u8MsgBuffer, u16DataLen, &struParam);

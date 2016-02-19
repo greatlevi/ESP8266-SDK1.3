@@ -15,7 +15,7 @@
 #include <zc_protocol_interface.h>
 #include <ac_api.h>
 #include <stdio.h>
-#define MSG_SERVER_CLIENT_SET_LED_ONOFF_REQ  (68)
+//#define MSG_SERVER_CLIENT_SET_LED_ONOFF_REQ  (68)
 #define MSG_CLIENT_SERVER_GET_DEV_STATUS_RSP (201)
 #define MSG_SERVER_CLIENT_GET_LED_STATUS_RSP (203) 
 #define CLIENT_SERVER_OK  (102)   

@@ -2,7 +2,7 @@
 
 echo "gen_misc.sh version 20151112"
 echo "gen flash=4Mbytes"
-touch user/user_main.c
+#touch user/user_main.c
 
 boot=new
 app=1

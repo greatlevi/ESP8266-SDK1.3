@@ -149,16 +149,16 @@ DDEFINES +=				\
 #
 
 INCLUDES := $(INCLUDES) -I $(PDIR)include
-INCLUDES += -I $(PDIR)ATCMD
+#INCLUDES += -I $(PDIR)ATCMD
 INCLUDES += -I $(PDIR)driver
 INCLUDES += -I $(PDIR)src
-INCLUDES += -I $(PDIR)src/AC/inc
-INCLUDES += -I $(PDIR)src/aes
-INCLUDES += -I $(PDIR)src/ZC/inc/tropicssl
-INCLUDES += -I $(PDIR)src/ZC/inc/zc
-INCLUDES += -I $(PDIR)Light
-INCLUDES += -I $(PDIR)RFnetwork
-INCLUDES += -I $(PDIR)Security
+#INCLUDES += -I $(PDIR)src/AC/inc
+#INCLUDES += -I $(PDIR)src/aes
+#INCLUDES += -I $(PDIR)src/ZC/inc/tropicssl
+#INCLUDES += -I $(PDIR)src/ZC/inc/zc
+#INCLUDES += -I $(PDIR)Light
+#INCLUDES += -I $(PDIR)RFnetwork
+#INCLUDES += -I $(PDIR)Security
 INCLUDES += -I $(PDIR)System
 INCLUDES += -I $(PDIR)Wifi
 

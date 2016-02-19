@@ -161,6 +161,8 @@ else
     app = 0
 endif
 
+
+
 CSRCS ?= $(wildcard *.c)
 ASRCs ?= $(wildcard *.s)
 ASRCS ?= $(wildcard *.S)
@@ -304,6 +306,7 @@ clobber: $(SPECIAL_CLOBBER)
 	$(RM) -r $(ODIR)
 
 .subdirs:
+	@echo "SUBDIRS is $(SUBDIRS)"
 	@set -e; $(foreach d, $(SUBDIRS), $(MAKE) -C $(d);)
 
 #.subdirs:

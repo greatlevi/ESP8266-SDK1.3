@@ -526,11 +526,20 @@ ESP_RecvFromCloud(void *arg, char *pusrdata, unsigned short length)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_ConnectedCloud(void *arg)
 {
+    u32 u32Keeplive;
     struct espconn *pespconn = arg;
     espconn_regist_recvcb(pespconn, ESP_RecvFromCloud);
     espconn_regist_sentcb(pespconn, ESP_SendToCloudSuccess);
     if (ZC_CLOUD_PORT != pespconn->proto.tcp->remote_port)
     {
+        espconn_set_opt(pespconn, ESPCONN_KEEPALIVE); // enable TCP keep alive
+        //set keepalive: 35s = 20 + 5*3 
+        u32Keeplive = 20; 
+        espconn_set_keepalive(pespconn, ESPCONN_KEEPIDLE, &u32Keeplive); 
+        u32Keeplive = 5; 
+        espconn_set_keepalive(pespconn, ESPCONN_KEEPINTVL, &u32Keeplive); 
+        u32Keeplive = 3; //try times 
+        espconn_set_keepalive(pespconn, ESPCONN_KEEPCNT, &u32Keeplive);
         espconn_regist_disconcb(pespconn, ESP_DisconFromCloud);
     }
 
@@ -783,8 +792,8 @@ ESP_ListenClient(PTC_Connection *pstruConnection)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_RecvFromBroadcast(void *arg, char *pusrdata, unsigned short length)
 {
-    ZC_Printf("recv udp data: \n");
-    ZCHEX_Printf(pusrdata,length);
+    //ZC_Printf("recv udp data: \n");
+    //ZCHEX_Printf(pusrdata,length);
     ZC_SendClientQueryReq(pusrdata,length);
 }
 /*************************************************

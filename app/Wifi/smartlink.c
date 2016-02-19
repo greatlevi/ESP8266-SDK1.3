@@ -188,6 +188,7 @@ WifiInit(void)
 void ICACHE_FLASH_ATTR
 InterruptIOHandle(void)
 {
+#if 0
 	uint32 gpio_status;
 	gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
 	if(gpio_status&BIT4)
@@ -196,6 +197,7 @@ InterruptIOHandle(void)
 	    SmartLinkInter();
 	}
 	GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status);
+#endif
 }
 
 /******************************************************************************

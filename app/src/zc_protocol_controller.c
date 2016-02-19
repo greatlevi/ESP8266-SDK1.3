@@ -17,6 +17,10 @@
 #include "user_config.h"
 #include "espconn.h"
 
+#include "gpio.h"
+#include "eagle_soc.h"
+
+
 PTC_ProtocolCon  g_struProtocolController;
 extern ZC_Timer g_struTimer[ZC_TIMER_MAX_NUM];
 extern struct espconn tcp_server_conn;
@@ -149,6 +153,8 @@ PCT_SendEmptyMsg(u8 u8MsgId, u8 u8SecType)
     ZC_MessageHead struMsg;
     ZC_SecHead struSecHead;
     u16 u16Len = 0;
+
+    //ZC_Printf("PCT_SendEmptyMsg\n");
     /*build msg*/
     EVENT_BuildEmptyMsg(u8MsgId, (u8*)&struMsg, &u16Len);
     
@@ -156,7 +162,6 @@ PCT_SendEmptyMsg(u8 u8MsgId, u8 u8SecType)
     struSecHead.u8SecType = u8SecType;
     struSecHead.u16TotalMsg = ZC_HTONS(u16Len);
 
-    
     (void)PCT_SendMsgToCloud(&struSecHead, (u8*)&struMsg);
 }
 /*************************************************
@@ -499,10 +504,9 @@ PCT_RecvAccessMsg2(PTC_ProtocolCon *pstruContoller)
                     pstruAccessPoint=(ZC_AccessPoint*)(pstruMsg + 1);
                     u32Addr = ZC_HTONL(pstruAccessPoint->u32ServerAddr);
                     u16Port = ZC_HTONS(pstruAccessPoint->u16ServerPort);
-                    ZC_Printf("Recv Access Point ok,Cloud Addr=0x%08x,port=%u!\n",u32Addr,u16Port);
                     ZC_StoreAccessInfo((u8 *)&u32Addr,(u8 *)&u16Port);
                     PCT_DisConnectCloud(pstruContoller);
-                    //ZC_Printf("Recv Access Point ok,Cloud Addr=%x,port=%u!\n",u32Addr,u16Port);
+                    ZC_Printf("Recv Access Point ok,Cloud Addr=%x,port=%u!\n",u32Addr,u16Port);
                 }
             }
             else
@@ -1008,6 +1012,45 @@ PCT_ResetNetWork(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
 
     return;
 }
+#define MSG_SERVER_CLIENT_SET_LED_ONOFF_REQ  (68)
+
+typedef struct tag_STRU_LED_STATUS
+{		
+    u8	     u8LedOnOff ; // 0:关，1：开，2：获取当前开关状态
+    u8	     u8Pad[3];		 
+}STRU_LED_STATUS;
+
+void PCT_TurnOnOffLight(PTC_ProtocolCon *pstruContoller, MSG_Buffer *pstruBuffer)
+{
+    ZC_MessageHead *pstruMsg;
+    STRU_LED_STATUS *pstruLed;
+    u16 u16Len;
+    u32 u32Value;
+    ZC_SecHead struSechead;
+    u8 u8Payload[4] = {1, 0, 0, 0};
+    ZC_Printf("PCT_TurnOnOffLight\n");
+
+    pstruMsg = (ZC_MessageHead*)pstruBuffer->u8MsgBuffer;
+    pstruLed = (STRU_LED_STATUS *)(pstruMsg + 1);
+    switch (pstruLed->u8LedOnOff)
+    {
+        case 0:
+        case 1:
+            u32Value = ((pstruLed->u8LedOnOff == 0) ? 1 : 0);
+            GPIO_OUTPUT_SET(GPIO_ID_PIN(4), u32Value);
+            break;
+        default:
+            ZC_Printf("u8LedOnOff is %d\n", pstruLed->u8LedOnOff);
+            return;
+    }
+    /* 给app回响应 */
+    PCT_SendEmptyMsg(pstruMsg->MsgId, ZC_SEC_ALG_AES);
+    EVENT_BuildMsg(102, pstruMsg->MsgId, g_u8MsgBuildBuffer, &u16Len, u8Payload, 4);
+    struSechead.u8SecType = ZC_SEC_ALG_AES;
+    struSechead.u16TotalMsg = ZC_HTONS(u16Len);
+    (void)PCT_SendMsgToCloud(&struSechead, g_u8MsgBuildBuffer);
+    return;
+}
 
 /*************************************************
 * Function: PCT_HandleEvent
@@ -1085,6 +1128,9 @@ PCT_HandleEvent(PTC_ProtocolCon *pstruContoller)
             PCT_ResetNetWork(pstruContoller, pstruBuffer);
             break;
         case ZC_CODE_UNBIND:
+            break;
+        case MSG_SERVER_CLIENT_SET_LED_ONOFF_REQ:
+            PCT_TurnOnOffLight(pstruContoller, pstruBuffer);
             break;
         default:
         	PCT_HandleMoudleMsg(pstruContoller, pstruBuffer);
@@ -1246,6 +1292,7 @@ PCT_SendMsgToCloud(ZC_SecHead *pstruSecHead, u8 *pu8PlainData)
             g_struSendBuffer[u32Index].u32Len = u16Len + sizeof(ZC_SecHead);
             g_struSendBuffer[u32Index].u8Status = MSG_BUFFER_FULL;
             MSG_PushMsg(&g_struSendQueue, (u8*)&g_struSendBuffer[u32Index]);
+            //ZC_Printf("PushQ, index is %d\n", u32Index);
 
             return ZC_RET_OK;
         }

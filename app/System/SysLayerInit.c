@@ -94,7 +94,7 @@ void ICACHE_FLASH_ATTR
  Sys_LayerInit(void)
 {
 
-	InterruptIOInit();
+	//InterruptIOInit();
   SysTask.m_Hs6200Ok = 100;
   SysTask.m_LedCnt = 5;
   SysTask.m_WifiState = WIFI_SMARTLINK;
