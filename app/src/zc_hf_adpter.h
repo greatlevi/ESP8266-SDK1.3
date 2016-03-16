@@ -119,6 +119,7 @@ void UartInit(void);
 void Uart_RecvFromMcu(void);
 void ESP_ChangeToNormalState(void);
 u32 ESP_FlashEraseAddWrite(void);
+u32 ESP_GetRandTime(void);
 
 
 #ifdef __cplusplus

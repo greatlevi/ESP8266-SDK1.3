@@ -13,7 +13,6 @@
 #include "user_config.h"
 
 
-
 /*************************************************
 * Function: MSG_Init()
 * Description: 
@@ -307,6 +306,26 @@ MSG_SendDataToCloud(u8 *pu8Connection)
     ZC_SendParam struParam;
 
     u16 u16DataLen; 
+
+    if (1 == g_struProtocolController.u32AckFlag)
+    {
+        /* 起一个定时器，防止收不到ack，无法再发送包 */
+        if (PCT_TIMER_INVAILD == g_struProtocolController.u8NoackTimer)
+        {
+            g_struProtocolController.pstruMoudleFun->pfunSetTimer(PCT_TIMER_NOACK, 
+                    PCT_TIMER_INTERVAL_NOACK, &g_struProtocolController.u8NoackTimer);
+        }
+        return;
+    }
+    else
+    {
+        /* 取消定时器 */
+        if (PCT_TIMER_INVAILD != g_struProtocolController.u8NoackTimer)
+        {
+            TIMER_StopTimer(g_struProtocolController.u8NoackTimer);
+            g_struProtocolController.u8NoackTimer = PCT_TIMER_INVAILD;
+        }
+    }
     pstruBuf = (MSG_Buffer *)MSG_PopMsg(&g_struSendQueue); 
     
     if (NULL == pstruBuf)return;

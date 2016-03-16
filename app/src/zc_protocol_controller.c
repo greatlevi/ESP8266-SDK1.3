@@ -126,10 +126,13 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     MSG_Init();
     TIMER_Init();
 
+    g_struProtocolController.u32AckFlag = 0;
+
     g_struProtocolController.u8keyRecv = PCT_KEY_UNRECVED;
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8SendMoudleTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8HeartTimer = PCT_TIMER_INVAILD;
+    g_struProtocolController.u8NoackTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8RegisterTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8RebootTimer = PCT_TIMER_INVAILD;
 
@@ -137,6 +140,7 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     g_struProtocolController.u8SmntFlag = 0;
     
     g_struOtaBuf.u16DateUsed = 0;
+    g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
     ZC_ClientInit();
 }
 /*************************************************
@@ -370,11 +374,12 @@ PCT_ReconnectCloud(PTC_ProtocolCon *pstruContoller, u32 u32ReConnectTimer)
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8SendMoudleTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8HeartTimer = PCT_TIMER_INVAILD;
+    g_struProtocolController.u8NoackTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
 
     pstruContoller->pstruMoudleFun->pfunSetTimer(PCT_TIMER_RECONNECT, 
         u32ReConnectTimer, &pstruContoller->u8ReconnectTimer);
-    //ZC_Printf("u8ReconnectTimer = %d\n",pstruContoller->u8ReconnectTimer);
+    ZC_Printf("u32ReConnectTimer = %d\n",u32ReConnectTimer / 1000);
     pstruContoller->struCloudConnection.u32Socket = PCT_SERVER_TCP_SOCKET;//PCT_INVAILD_SOCKET;
     pstruContoller->u8keyRecv = PCT_KEY_UNRECVED; 
     pstruContoller->u8MainState = PCT_STATE_INIT;
@@ -1232,6 +1237,7 @@ PCT_Sleep()
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8SendMoudleTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8HeartTimer = PCT_TIMER_INVAILD;
+    g_struProtocolController.u8NoackTimer = PCT_TIMER_INVAILD;
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
     g_struProtocolController.u8RegisterTimer = PCT_TIMER_INVAILD;
     PCT_SendNotifyMsg(ZC_CODE_WIFI_DISCONNECTED);

@@ -125,9 +125,13 @@ TIMER_TimeoutAction(u8 u8TimerIndex)
             ZC_Printf("PCT_TIMER_SENDUBIND\n");
             PCT_SendUnbindMsg();
             break;
-         case PCT_TIMER_REBOOT:
+        case PCT_TIMER_REBOOT:
              ZC_Printf("PCT_TIMER_REBOOT\n");
             g_struProtocolController.pstruMoudleFun->pfunReboot();
+            break;
+        case PCT_TIMER_NOACK:
+            ZC_Printf("PCT_TIMER_NOACK\n");
+            g_struProtocolController.u32AckFlag = 0;
             break;
     }
 }

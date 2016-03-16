@@ -392,6 +392,7 @@ ESP_SendTcpData(u32 u32Fd, u8 *pu8Data, u16 u16DataLen, ZC_SendParam *pstruParam
     {
         espconn_send(&tcp_server_conn, pu8Data, u16DataLen);
         ZC_Printf("Send to cloud dataLen is :%d\n",u16DataLen);
+        g_struProtocolController.u32AckFlag = 1;
     }
     else if (PCT_CLIENT_TCP_SOCKET == u32Fd)
     {
@@ -469,6 +470,7 @@ ESP_Reboot(void)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_SendToCloudSuccess(void *arg)
 {
+    g_struProtocolController.u32AckFlag = 2;   /* got ack */
     ZC_Printf("ESP_SendToCloudSuccess success!!! \n");
 }
 /*************************************************
@@ -482,6 +484,7 @@ ESP_SendToCloudSuccess(void *arg)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_DisconFromCloud(void *arg)
 {
+    u32 u32Timer;
     struct espconn *pespconn = arg;
     
     if (SMART_CONFIG_STATE == g_struProtocolController.u8SmntFlag)
@@ -490,12 +493,14 @@ ESP_DisconFromCloud(void *arg)
     }
 
 	ZC_Printf("ESP_DisconFromCloud !!!\n");
+
+    u32Timer = ESP_GetRandTime();
     if (tcp_server_conn.proto.tcp->remote_port == pespconn->proto.tcp->remote_port)
     {
         (void)espconn_disconnect(&tcp_server_conn);
         os_delay_us(1000);
-
-        PCT_ReconnectCloud(&g_struProtocolController, 1000);
+        
+        PCT_ReconnectCloud(&g_struProtocolController, u32Timer);
 
     }
 }
@@ -546,6 +551,7 @@ ESP_ConnectedCloud(void *arg)
 	g_struProtocolController.u8MainState = PCT_STATE_WAIT_ACCESS;
 	g_struProtocolController.u8keyRecv = PCT_KEY_UNRECVED;
 
+    g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
     ZC_Printf("connect succeed !!! \r\n");
 }
 /*************************************************
@@ -559,13 +565,16 @@ ESP_ConnectedCloud(void *arg)
 LOCAL void ICACHE_FLASH_ATTR
 ESP_ReconnectCloud(void *arg, sint8 err)
 {
+    u32 u32Timer;
     ZC_Printf("user error code %d !!! \r\n",err);
     if (SMART_CONFIG_STATE == g_struProtocolController.u8SmntFlag)
     {
         return;
     }
+
     //if(g_struProtocolController.u8MainState == PCT_STATE_INIT)return;
-	PCT_ReconnectCloud(&g_struProtocolController, 1000);
+    u32Timer = ESP_GetRandTime();
+	PCT_ReconnectCloud(&g_struProtocolController, u32Timer);
 	g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
 	g_struUartBuffer.u32RecvLen = 0;
 	g_struProtocolController.u8MainState = PCT_STATE_ACCESS_NET;
@@ -606,8 +615,14 @@ ESP_DnsFoundHook(const char *name, ip_addr_t *ipaddr, void *arg)
         temp = espconn_connect(&tcp_server_conn);
         if(temp == ESPCONN_ISCONN)
         {
+            ZC_Printf("ESP_DnsFoundHook: already connected\n ");
+            g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
             g_struProtocolController.u8MainState = PCT_STATE_WAIT_ACCESS;
             return;
+        }
+        else
+        {
+            g_struProtocolController.struCloudConnection.u32ConnectionTimes++;
         }
         ZC_Printf("tcp connect %d, %d.%d.%d.%d, %d,%d\n",temp,
                 tcp_server_conn.proto.tcp->remote_ip[0],
@@ -649,10 +664,12 @@ ESP_ConnectToCloud(PTC_Connection *pstruConnection)
         retval = espconn_gethostbyname(&tcp_server_conn,
                                         (const char *)g_struZcConfigDb.struCloudInfo.u8CloudAddr,
                                          &tcp_server_ip, ESP_DnsFoundHook);
+
+        g_struProtocolController.u8MainState = PCT_STATE_INIT;
         return ZC_RET_OK;
     }
     
-    ZC_Printf("cloud_default ip %d.%d.%d.%d %d\r\n",
+    ZC_Printf("connect cloud_default ip %d.%d.%d.%d %d\r\n",
             *((uint8 *)&struIp.addr), *((uint8 *)&struIp.addr + 1),
             *((uint8 *)&struIp.addr + 2), *((uint8 *)&struIp.addr + 3), port);
 
@@ -668,7 +685,7 @@ ESP_ConnectToCloud(PTC_Connection *pstruConnection)
     {
         ZC_Printf("Connect not ok\n");
     }
-    g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
+    g_struProtocolController.struCloudConnection.u32ConnectionTimes++;
     g_struProtocolController.u8MainState = PCT_STATE_INIT;
     ZC_Rand(g_struProtocolController.RandMsg);
 
@@ -987,6 +1004,8 @@ ESP_Sleep()
     
     g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
     g_struUartBuffer.u32RecvLen = 0;
+
+    g_struProtocolController.u32AckFlag = 0;
 }
 
 /*************************************************
@@ -1023,6 +1042,8 @@ ESP_Cloudfunc(void)
     
     if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
     {
+        u32Timer =  ESP_GetRandTime();
+    #if 0
         if (0 == g_struProtocolController.struCloudConnection.u32ConnectionTimes)
         {
             u32Timer = 1000;
@@ -1032,6 +1053,7 @@ ESP_Cloudfunc(void)
             u32Timer = rand();
             u32Timer = (PCT_TIMER_INTERVAL_RECONNECT) * (u32Timer % 10 + 1);
         }
+    #endif
         PCT_ReconnectCloud(&g_struProtocolController, u32Timer);
         g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
         g_struUartBuffer.u32RecvLen = 0;
@@ -1072,6 +1094,27 @@ void ESP_CreateTaskTimer(void)
 void ESP_ChangeToNormalState(void)
 {
     g_struProtocolController.u8SmntFlag = 0;
+}
+/*************************************************
+* Function: ESP_GetRandTime
+* Description:
+* Author: cxy
+* Returns:
+* Parameter:
+* History:
+*************************************************/
+u32 ESP_GetRandTime(void)
+{
+    u32 u32Base, u32Timer;
+    if (g_struProtocolController.struCloudConnection.u32ConnectionTimes > 20)
+    {
+        g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig = 0;
+        g_struProtocolController.struCloudConnection.u32ConnectionTimes = 0;
+    }
+    u32Base = 5 * g_struProtocolController.struCloudConnection.u32ConnectionTimes;
+    u32Timer = rand();
+    u32Timer = (PCT_TIMER_INTERVAL_RECONNECT) * (u32Timer % 10 + 1 + u32Base);  
+    return u32Timer;
 }
 /*************************************************
 * Function: UARTRx_Buf_Init

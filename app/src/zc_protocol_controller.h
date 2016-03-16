@@ -44,6 +44,7 @@
 #define    PCT_TIMER_REGISTER               (4)
 #define    PCT_TIMER_SENDUBIND              (5)
 #define    PCT_TIMER_REBOOT                 (6)
+#define    PCT_TIMER_NOACK                  (7)
 
 #define    PCT_TIMER_INTERVAL_RECONNECT     (1000)
 #define    PCT_TIMER_INTERVAL_HEART         (1000 * 60)
@@ -51,7 +52,7 @@
 #define    PCT_TIMER_INTERVAL_REGISTER      (1000)
 #define    PCT_TIMER_INTERVAL_SENDUBIND     (1000)
 #define    PCT_TIMER_INTERVAL_REBOOT        (1000)
-
+#define    PCT_TIMER_INTERVAL_NOACK         (1000 * 3)
 
 #define    PCT_SEND_BC_MAX_NUM              (100)       /*5 minutes 300*/
 
@@ -148,11 +149,12 @@ typedef struct
     
     u8   u8RebootTimer;   
     u8   u8HeartTimer;
+    u8   u8NoackTimer;
     u8   u8SendMoudleTimer;
     u8   u8RegisterTimer;
     u8   u8ReSendMoudleNum;
     u8   u8SmntFlag;
-    
+    u32  u32AckFlag;
     u8   *pu8SendMoudleBuffer;
     u32  u32UserBinNum;
     u32  u32OtaSectorNum;
