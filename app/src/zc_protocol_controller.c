@@ -127,6 +127,7 @@ PCT_Init(PTC_ModuleAdapter *pstruAdapter)
     TIMER_Init();
 
     g_struProtocolController.u32AckFlag = 0;
+    g_struProtocolController.u32RecvAccessFlag = 0;
 
     g_struProtocolController.u8keyRecv = PCT_KEY_UNRECVED;
     g_struProtocolController.u8ReconnectTimer = PCT_TIMER_INVAILD;
@@ -511,7 +512,9 @@ PCT_RecvAccessMsg2(PTC_ProtocolCon *pstruContoller)
                     u16Port = ZC_HTONS(pstruAccessPoint->u16ServerPort);
                     ZC_StoreAccessInfo((u8 *)&u32Addr,(u8 *)&u16Port);
                     PCT_DisConnectCloud(pstruContoller);
+                    g_struProtocolController.u32RecvAccessFlag = 1;
                     ZC_Printf("Recv Access Point ok,Cloud Addr=%x,port=%u!\n",u32Addr,u16Port);
+                    
                 }
             }
             else

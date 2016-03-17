@@ -155,6 +155,7 @@ typedef struct
     u8   u8ReSendMoudleNum;
     u8   u8SmntFlag;
     u32  u32AckFlag;
+    u32  u32RecvAccessFlag;
     u8   *pu8SendMoudleBuffer;
     u32  u32UserBinNum;
     u32  u32OtaSectorNum;

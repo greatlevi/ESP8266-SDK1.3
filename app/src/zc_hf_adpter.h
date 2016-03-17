@@ -31,6 +31,8 @@
 
 #define SECTOR_SIZE                      PCT_OTA_BUF_LEN
 
+#define MAC_LEN                           (6)
+
 typedef struct 
 {
     os_timer_t timer;

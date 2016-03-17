@@ -910,8 +910,8 @@ ESP_UdpBroadcast(void)
 int ICACHE_FLASH_ATTR
 ESP_Init(void)
 {
-	char mac_buf[8];
-    char mac_string[16];
+	char mac_buf[MAC_LEN];
+    char mac_string[ZC_HS_DEVICE_ID_LEN];
     u32 u32BinAddr;
 	g_u64Domain = ((((u64)((SUB_DOMAIN_ID & 0xff00) >> 8)) << 48) + (((u64)(SUB_DOMAIN_ID & 0xff)) << 56) + (((u64)MAJOR_DOMAIN_ID & 0xff) << 40) + ((((u64)MAJOR_DOMAIN_ID & 0xff00) >> 8) << 32)
 	+ ((((u64)MAJOR_DOMAIN_ID & 0xff0000) >> 16) << 24)
@@ -945,15 +945,13 @@ ESP_Init(void)
     ESP_ReadDataFormFlash();
     ESP_BcInit();
 
-    os_memset(g_u8DeviceId, '0', 16);
-    os_memset(mac_string, '\0', 12);
+    os_memset(g_u8DeviceId, '0', ZC_HS_DEVICE_ID_LEN);
+    os_memset(mac_string, '\0', ZC_HS_DEVICE_ID_LEN);
     
     wifi_get_macaddr(STATION_IF, mac_buf);
-    mac_buf[6] = spi_flash_get_id();
-    mac_buf[7] = spi_flash_get_id() >> 8;
-    ZCHEX_Printf(mac_buf,8);
-    ZC_HexToString(mac_string, mac_buf, 8);
-    os_memcpy(g_u8DeviceId, mac_string, ZC_HS_DEVICE_ID_LEN);
+    ZCHEX_Printf(mac_buf, MAC_LEN);
+    ZC_HexToString(mac_string, mac_buf, MAC_LEN);
+    os_memcpy(g_u8DeviceId, mac_string, MAC_LEN * 2);
 
     os_memcpy(g_struRegisterInfo.u8PrivateKey, g_u8ModuleKey, ZC_MODULE_KEY_LEN);
     os_memcpy(g_struRegisterInfo.u8DeviciId, g_u8DeviceId, ZC_HS_DEVICE_ID_LEN);
@@ -1006,6 +1004,7 @@ ESP_Sleep()
     g_struUartBuffer.u32RecvLen = 0;
 
     g_struProtocolController.u32AckFlag = 0;
+    g_struProtocolController.u32RecvAccessFlag = 0;
 }
 
 /*************************************************
@@ -1043,17 +1042,7 @@ ESP_Cloudfunc(void)
     if (PCT_STATE_DISCONNECT_CLOUD == g_struProtocolController.u8MainState)
     {
         u32Timer =  ESP_GetRandTime();
-    #if 0
-        if (0 == g_struProtocolController.struCloudConnection.u32ConnectionTimes)
-        {
-            u32Timer = 1000;
-        }
-        else
-        {
-            u32Timer = rand();
-            u32Timer = (PCT_TIMER_INTERVAL_RECONNECT) * (u32Timer % 10 + 1);
-        }
-    #endif
+
         PCT_ReconnectCloud(&g_struProtocolController, u32Timer);
         g_struUartBuffer.u32Status = MSG_BUFFER_IDLE;
         g_struUartBuffer.u32RecvLen = 0;
@@ -1106,6 +1095,13 @@ void ESP_ChangeToNormalState(void)
 u32 ESP_GetRandTime(void)
 {
     u32 u32Base, u32Timer;
+
+    if (1 == g_struProtocolController.u32RecvAccessFlag)
+    {
+        g_struProtocolController.u32RecvAccessFlag = 0;
+        u32Timer = PCT_TIMER_INTERVAL_RECONNECT;
+        return u32Timer;
+    }
     if (g_struProtocolController.struCloudConnection.u32ConnectionTimes > 20)
     {
         g_struZcConfigDb.struSwitchInfo.u32ServerAddrConfig = 0;
